@@ -1,5 +1,5 @@
 @isTest
-public class s1_ngForceController_TEST{
+public class ngForceController_TEST{
 	private static String tooLongAccName = 'LOTS OF ' +
 	                                       'CHARACTERS XXXXXXXXXXXXXXXXXXXXXXXX' +
 	                                       'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' +
@@ -32,22 +32,22 @@ public class s1_ngForceController_TEST{
 
 	static testMethod void testDescribe() {
 		// Assume we have accounts
-		String jsonResult = s1_ngForceController.describe('Account');
+		String jsonResult = ngForceController.describe('Account');
 
 		System.assertNotEquals(null, jsonResult,
-		                       's1_ngForceController.describe returned null');
+		                       'ngForceController.describe returned null');
 
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 
 		System.assertNotEquals(null, result.get('fields'),
-		                       'fields property missing from s1_ngForceController.describe result');
+		                       'fields property missing from ngForceController.describe result');
 
 		// TODO - more assertions on describe results
 
 		// Invalid object type
 		// Hope there isn't a QXZXQZXZQXZQ object type!
-		jsonResult = s1_ngForceController.describe('QXZXQZXZQXZQ');
-		assertError(jsonResult, 'NOT_FOUND', 's1_ngForceController.describe');
+		jsonResult = ngForceController.describe('QXZXQZXZQXZQ');
+		assertError(jsonResult, 'NOT_FOUND', 'ngForceController.describe');
 	}
 
 	static private void assertRecord(Map<String, Object> record, String accName, String accNumber, String method) {
@@ -93,13 +93,13 @@ public class s1_ngForceController_TEST{
 		// Assume we can create an account
 
 		// Try with data in correct types
-		String jsonResult = s1_ngForceController.create('Account',
+		String jsonResult = ngForceController.create('Account',
 		                    '{"Name": "' + accName + '", ' +
 		                    '"AccountNumber" : "' + accNumber + '",' +
 		                    fields + '}');
 
 		System.assertNotEquals(null, jsonResult,
-		                       's1_ngForceController.create returned null');
+		                       'ngForceController.create returned null');
 
 
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
@@ -107,98 +107,98 @@ public class s1_ngForceController_TEST{
 
 		Boolean success = (Boolean)result.get('success');
 		System.assertNotEquals(null, success,
-		                       'success property missing from s1_ngForceController.create result');
+		                       'success property missing from ngForceController.create result');
 		System.assertNotEquals(false, success,
-		                       'success is false in s1_ngForceController.create result');
+		                       'success is false in ngForceController.create result');
 
 		List<Object> errors = (List<Object>)result.get('errors');
 		System.assertNotEquals(null, errors,
-		                       'errors property missing from s1_ngForceController.create result');
+		                       'errors property missing from ngForceController.create result');
 		System.assertEquals(0, errors.size(),
-		                    'errors array is not empty in s1_ngForceController.create result');
+		                    'errors array is not empty in ngForceController.create result');
 
 
 		Id id = (Id)result.get('id');
 		System.assertNotEquals(null, id,
-		                       'id property missing from s1_ngForceController.create result');
+		                       'id property missing from ngForceController.create result');
 		Account account = [SELECT Id, Name, AccountNumber FROM Account LIMIT 1];
 		System.assertNotEquals(null, account,
-		                       'Couldn\'t find account record created by s1_ngForceController.create result');
+		                       'Couldn\'t find account record created by ngForceController.create result');
 		System.assertEquals(accName, account.Name,
-		                    'Account name doesn\'t match in s1_ngForceController.create result');
+		                    'Account name doesn\'t match in ngForceController.create result');
 		System.assertEquals(accNumber, account.AccountNumber,
-		                    'Account number doesn\'t match in s1_ngForceController.create result');
+		                    'Account number doesn\'t match in ngForceController.create result');
 
-		jsonResult = s1_ngForceController.create('QXZXQZXZQXZQ', '{"Name": "' + accName + '"}');
-		assertError(jsonResult, 'NOT_FOUND', 's1_ngForceController.create');
+		jsonResult = ngForceController.create('QXZXQZXZQXZQ', '{"Name": "' + accName + '"}');
+		assertError(jsonResult, 'NOT_FOUND', 'ngForceController.create');
 
-		jsonResult = s1_ngForceController.create('Account', '{"Name" "' + accName + '"}');
-		assertError(jsonResult, 'JSON_PARSER_ERROR', 's1_ngForceController.create');
+		jsonResult = ngForceController.create('Account', '{"Name" "' + accName + '"}');
+		assertError(jsonResult, 'JSON_PARSER_ERROR', 'ngForceController.create');
 
-		jsonResult = s1_ngForceController.create('Account', '{"XQZXQZXQZXQZ" : "' + accName + '"}');
-		assertError(jsonResult, 'INVALID_FIELD', 's1_ngForceController.create');
+		jsonResult = ngForceController.create('Account', '{"XQZXQZXQZXQZ" : "' + accName + '"}');
+		assertError(jsonResult, 'INVALID_FIELD', 'ngForceController.create');
 
-		jsonResult = s1_ngForceController.create('Account', '{"Name" : "' + tooLongAccName + '"}');
-		assertError(jsonResult, 'STRING_TOO_LONG', 's1_ngForceController.create');
+		jsonResult = ngForceController.create('Account', '{"Name" : "' + tooLongAccName + '"}');
+		assertError(jsonResult, 'STRING_TOO_LONG', 'ngForceController.create');
 
 		return id;
 	}
 
 	static private void testRetrieve(String accName, String accNumber, Id id) {
-		String jsonResult = s1_ngForceController.retrieve('Account', id, 'Name, AccountNumber');
+		String jsonResult = ngForceController.retrieve('Account', id, 'Name, AccountNumber');
 
 		System.assertNotEquals(null, jsonResult,
-		                       's1_ngForceController.retrieve returned null');
+		                       'ngForceController.retrieve returned null');
 
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 
-		assertRecord(result, accName, accNumber, 's1_ngForceController.retrieve');
+		assertRecord(result, accName, accNumber, 'ngForceController.retrieve');
 
 		// TODO - test negative paths for retrieve
 	}
 
 	static private void testQuery(String accName, String accNumber) {
-		String jsonResult = s1_ngForceController.query('SELECT Id, Name, AccountNumber FROM Account WHERE Name = \'' + accName + '\'');
+		String jsonResult = ngForceController.query('SELECT Id, Name, AccountNumber FROM Account WHERE Name = \'' + accName + '\'');
 
 		System.assertNotEquals(null, jsonResult,
-		                       's1_ngForceController.query returned null');
+		                       'ngForceController.query returned null');
 
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 
 		List<Object> records = (List<Object>)result.get('records');
 		System.assertNotEquals(null, records,
-		                       'records property missing from s1_ngForceController.query result');
+		                       'records property missing from ngForceController.query result');
 		System.assertEquals(1, records.size(),
-		                    'records array should have single record in s1_ngForceController.query result');
+		                    'records array should have single record in ngForceController.query result');
 
 		Map<String, Object> record = (Map<String, Object>)records[0];
 
-		assertRecord(record, accName, accNumber, 's1_ngForceController.query');
+		assertRecord(record, accName, accNumber, 'ngForceController.query');
 
 		Integer totalSize = (Integer)result.get('totalSize');
 		System.assertNotEquals(null, totalSize,
-		                       'totalSize property missing from s1_ngForceController.query result');
+		                       'totalSize property missing from ngForceController.query result');
 		System.assertEquals(1, totalSize,
-		                    'totalSize should be 1 in s1_ngForceController.query result');
+		                    'totalSize should be 1 in ngForceController.query result');
 
 		Boolean done = (Boolean)result.get('done');
 		System.assertNotEquals(null, done,
-		                       'done property missing from s1_ngForceController.query result');
+		                       'done property missing from ngForceController.query result');
 		System.assertEquals(true, done,
-		                    'done should be true in s1_ngForceController.query result');
+		                    'done should be true in ngForceController.query result');
 
-		jsonResult = s1_ngForceController.query('SSSSSS Id, Name FROM Account WHERE Name = \'' + accName + '\'');
-		assertError(jsonResult, 'INVALID_QUERY', 's1_ngForceController.query');
+		jsonResult = ngForceController.query('SSSSSS Id, Name FROM Account WHERE Name = \'' + accName + '\'');
+		assertError(jsonResult, 'INVALID_QUERY', 'ngForceController.query');
 	}
 
 	static private void testSearch(String accName, String accNumber, Id id) {
 		Id [] fixedSearchResults = new Id[1];
 		fixedSearchResults[0] = id;
 		Test.setFixedSearchResults(fixedSearchResults);
-		String jsonResult = s1_ngForceController.search('FIND {' + accName + '} IN ALL FIELDS RETURNING Account (Id, Name, AccountNumber)');
+		String jsonResult = ngForceController.search('FIND {' + accName + '} IN ALL FIELDS RETURNING Account (Id, Name, AccountNumber)');
 
 		System.assertNotEquals(null, jsonResult,
-		                       's1_ngForceController.search returned null');
+		                       'ngForceController.search returned null');
 
 		List<Object> result = (List<Object>)JSON.deserializeUntyped(jsonResult);
 
@@ -206,29 +206,29 @@ public class s1_ngForceController_TEST{
 
 		Map<String, Object> record = (Map<String, Object>)records[0];
 
-		assertRecord(record, accName, accNumber, 's1_ngForceController.search');
+		assertRecord(record, accName, accNumber, 'ngForceController.search');
 
-		jsonResult = s1_ngForceController.search('FFFF {' + accName + '} IN ALL FIELDS RETURNING Account (Id, Name)');
-		assertError(jsonResult, 'INVALID_SEARCH', 's1_ngForceController.search');
+		jsonResult = ngForceController.search('FFFF {' + accName + '} IN ALL FIELDS RETURNING Account (Id, Name)');
+		assertError(jsonResult, 'INVALID_SEARCH', 'ngForceController.search');
 	}
 
 	static private void testUpdate(String accName, String accNumber, Id id, String fields) {
-		String jsonResult = s1_ngForceController.updat('Account', id, '{"Name":"' + accName + '", "AccountNumber":"' + accNumber + '"}');
+		String jsonResult = ngForceController.updat('Account', id, '{"Name":"' + accName + '", "AccountNumber":"' + accNumber + '"}');
 		System.assertEquals(null, jsonResult,
-		                    'Non-null result from s1_ngForceController.updat');
+		                    'Non-null result from ngForceController.updat');
 		Account account = [SELECT Id, Name, AccountNumber FROM Account WHERE Id = :id LIMIT 1];
 		System.assertNotEquals(null, account,
-		                       'Couldn\'t find account record after s1_ngForceController.updat');
+		                       'Couldn\'t find account record after ngForceController.updat');
 		System.assertEquals(accName, account.Name,
-		                    'Account name doesn\'t match after s1_ngForceController.updat');
+		                    'Account name doesn\'t match after ngForceController.updat');
 		System.assertEquals(accNumber, account.AccountNumber,
-		                    'Account number doesn\'t match after s1_ngForceController.updat');
+		                    'Account number doesn\'t match after ngForceController.updat');
 
-		jsonResult = s1_ngForceController.updat('QXZXQZXZQXZQ', id, '{"Name":"' + accName + '"}');
-		assertError(jsonResult, 'NOT_FOUND', 's1_ngForceController.updat');
+		jsonResult = ngForceController.updat('QXZXQZXZQXZQ', id, '{"Name":"' + accName + '"}');
+		assertError(jsonResult, 'NOT_FOUND', 'ngForceController.updat');
 
-		jsonResult = s1_ngForceController.updat('Account', id, '{"XQZXQZXQZXQZ" : "' + accName + '"}');
-		assertError(jsonResult, 'INVALID_FIELD', 's1_ngForceController.updat');
+		jsonResult = ngForceController.updat('Account', id, '{"XQZXQZXQZXQZ" : "' + accName + '"}');
+		assertError(jsonResult, 'INVALID_FIELD', 'ngForceController.updat');
 
 	}
 
@@ -250,19 +250,19 @@ public class s1_ngForceController_TEST{
 		fields = fields.substring(0, fields.lastIndexOf(','));
 		fields += ']';
 		//System.assertEquals(fields, null);
-		String jsonResult = s1_ngForceController.bulkUpdate('Account', fields);
+		String jsonResult = ngForceController.bulkUpdate('Account', fields);
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 		//List<Object> result = (List<Object>)JSON.deserializeUntyped(jsonResult);
 		System.AssertNotEquals(result, null);
 
-		String jsonResult2 = s1_ngForceController.bulkUpdate('', fields);
-		assertError(jsonResult2, 'NOT_FOUND', 's1_ngForceController.bulkCreate');
+		String jsonResult2 = ngForceController.bulkUpdate('', fields);
+		assertError(jsonResult2, 'NOT_FOUND', 'ngForceController.bulkCreate');
 		String mutatedFields = fields.remove('001');
-		jsonResult2 = s1_ngForceController.bulkUpdate('Account', mutatedFields);
-		assertError(jsonResult2, 'DML_ERROR', 's1_ngForceController.bulkCreate');
+		jsonResult2 = ngForceController.bulkUpdate('Account', mutatedFields);
+		assertError(jsonResult2, 'DML_ERROR', 'ngForceController.bulkCreate');
 
-		jsonResult2 = s1_ngForceController.bulkUpdate('Account', fields.remove('Name'));
-		assertError(jsonResult2, 'INVALID_JSON', 's1_ngForceController.bulkCreate');
+		jsonResult2 = ngForceController.bulkUpdate('Account', fields.remove('Name'));
+		assertError(jsonResult2, 'INVALID_JSON', 'ngForceController.bulkCreate');
 
 		Set<String> accountIds = new Set<String>();
 		for (Account account : accounts) {
@@ -276,27 +276,27 @@ public class s1_ngForceController_TEST{
 	}
 
 	static testMethod private void testGetQueryAsSelect2Data() {
-		s1_ngForceController.QueryString x = new s1_ngForceController.QueryString();
+		ngForceController.QueryString x = new ngForceController.QueryString();
 		x.selectClause = 'test';
 		x.fromClause = 'test';
 
-		s1_ngForceController.Select2Data y = new s1_ngForceController.Select2Data();
+		ngForceController.Select2Data y = new ngForceController.Select2Data();
 		y.id = 'foo';
 		y.name = 'bar';
 		y.searchName = 'baz';
 
-		String jsonResult = s1_ngForceController.getQueryResultsAsSelect2Data('select id, name from Account');
+		String jsonResult = ngForceController.getQueryResultsAsSelect2Data('select id, name from Account');
 		System.assertNotEquals(null, jsonResult, 'Expected to receieve data from method');
 
 		Account a = new Account(name = 'foobarbaz', accountNumber = '111323', AnnualRevenue = 10000.00,
 		                        NumberOfEmployees = 1000);
 		insert a;
 
-		jsonResult = s1_ngForceController.getQueryResultsAsSelect2Data('select id, name from Account');
+		jsonResult = ngForceController.getQueryResultsAsSelect2Data('select id, name from Account');
 		System.assertNotEquals('', jsonResult, 'Expected to receieve data from method');
 
-		jsonResult = s1_ngForceController.getQueryResultsAsSelect2Data('SELECT id, name Account');
-		assertError(jsonResult, 'INVALID_QUERY', 's1_ngForceController.getQueryResultsAsSelect2Data');
+		jsonResult = ngForceController.getQueryResultsAsSelect2Data('SELECT id, name Account');
+		assertError(jsonResult, 'INVALID_QUERY', 'ngForceController.getQueryResultsAsSelect2Data');
 	}
 
 	static testMethod private void testSObjectKlone() {
@@ -304,56 +304,56 @@ public class s1_ngForceController_TEST{
 		                        NumberOfEmployees = 1000);
 		insert a;
 
-		String jsonResult = s1_ngForceController.sObjectKlone(String.valueOf(a.Id));
+		String jsonResult = ngForceController.sObjectKlone(String.valueOf(a.Id));
 		System.assertNotEquals('', jsonResult, 'Expected to receieve data from method');
 
 	}
 
 	static private void testUpsert(String accName, String accNumber, String id, String fields) {
-		String jsonResult = s1_ngForceController.upser('Account',
+		String jsonResult = ngForceController.upser('Account',
 		                    'Id',
 		                    (String)id,
 		                    '{"Name":"' + accName + '", ' +
 		                    '"AccountNumber":"' + accNumber + '",' +
 		                    fields + '}');
 		System.assertEquals(null, jsonResult,
-		                    'Non-null result from s1_ngForceController.upser');
+		                    'Non-null result from ngForceController.upser');
 		Account account = [SELECT Id, Name, AccountNumber FROM Account WHERE id = :id LIMIT 1];
 		System.assertNotEquals(null, account,
-		                       'Couldn\'t find account record after s1_ngForceController.upser');
+		                       'Couldn\'t find account record after ngForceController.upser');
 		System.assertEquals(accName, account.Name,
-		                    'Account name doesn\'t match after s1_ngForceController.upser');
+		                    'Account name doesn\'t match after ngForceController.upser');
 		System.assertEquals(accNumber, account.AccountNumber,
-		                    'Account number doesn\'t match after s1_ngForceController.upser');
+		                    'Account number doesn\'t match after ngForceController.upser');
 	}
 
 	static private void testDelete(Id id) {
-		String jsonResult = s1_ngForceController.del('QXZXQZXZQXZQ', id);
-		assertError(jsonResult, 'NOT_FOUND', 's1_ngForceController.del');
+		String jsonResult = ngForceController.del('QXZXQZXZQXZQ', id);
+		assertError(jsonResult, 'NOT_FOUND', 'ngForceController.del');
 
-		jsonResult = s1_ngForceController.del('Account', id);
+		jsonResult = ngForceController.del('Account', id);
 		system.debug('$$$$$$$$$$$$' + jsonResult);
 		System.assertEquals(null, jsonResult,
-		                    'Non-null result from s1_ngForceController.del');
+		                    'Non-null result from ngForceController.del');
 		List<Account> accounts = [SELECT Id, Name FROM Account WHERE Id = :id];
 		System.assertEquals(0, accounts.size(),
-		                    'Account record was not deleted by s1_ngForceController.del');
+		                    'Account record was not deleted by ngForceController.del');
 
-		jsonResult = s1_ngForceController.del('Account', id);
-		assertError(jsonResult, 'ENTITY_IS_DELETED', 's1_ngForceController.del');
+		jsonResult = ngForceController.del('Account', id);
+		assertError(jsonResult, 'ENTITY_IS_DELETED', 'ngForceController.del');
 	}
 
 	static testMethod void testGetObjType() {
-		Account a = s1_TestUtils.getAccount();
-		String jsonResult = s1_ngForceController.getObjType(a.id);
+		Account a = TestUtils.getAccount();
+		String jsonResult = ngForceController.getObjType(a.id);
 		System.assertNotEquals(null, jsonResult,
-		                       's1_ngForceController.getObjType returned null');
+		                       'ngForceController.getObjType returned null');
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 		System.assertEquals('Account', result.get('type'));
 	}
 
 	static testMethod void testGetPicklistValues() {
-		String jsonResult = s1_ngForceController.getPicklistValues('Opportunity', 'StageName');
+		String jsonResult = ngForceController.getPicklistValues('Opportunity', 'StageName');
 		System.assertNotEquals(null, jsonResult);
 		List<Object> result = (List<Object>)JSON.deserializeUntyped(jsonResult);
 		System.assertNotEquals(null, result);
@@ -362,7 +362,7 @@ public class s1_ngForceController_TEST{
 	static testMethod void testBulkCreate() {
 		Map<Integer, Account> js = new Map<Integer, Account>();
 		String fields = '{"0":{"Name":"foo company 1368751413359"},"1":{"Name":"foo company 1368751413440"},"2":{"Name":"foo company 1368751413459"},"3":{"Name":"foo company 1368751413479"},"4":{"Name":"foo company 1368751413497"},"5":{"Name":"foo company 1368751413517"},"6":{"Name":"foo company 1368751413540"},"7":{"Name":"foo company 1368751413559"},"8":{"Name":"foo company 1368751413577"},"9":{"Name":"foo company 1368751413597"}}';
-		String jsonResult = s1_ngForceController.bulkCreate('Account', fields);
+		String jsonResult = ngForceController.bulkCreate('Account', fields);
 		Map<String, Object> result = (Map<String, Object>)JSON.deserializeUntyped(jsonResult);
 		System.AssertNotEquals(result.get('id'), null);
 		System.AssertEquals(result.get('success'), true);
@@ -378,7 +378,7 @@ public class s1_ngForceController_TEST{
 		                  '{"Id": "' + acc2.Id + '", "Name": "Test new name 2" }]';
 		System.debug(accsJson);
 
-		String res = s1_ngForceController.bulkUpdate('Account', accsJson);
+		String res = ngForceController.bulkUpdate('Account', accsJson);
 		System.debug('Return value: ' + res);
 
 		acc1 = [

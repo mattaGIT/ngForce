@@ -1,4 +1,4 @@
-public with sharing class s1_TestUtils{
+public with sharing class TestUtils{
 
 	public static User getStandardTestUser() {
 		String unique = String.valueOf(DateTime.now().getTime());

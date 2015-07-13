@@ -1,4 +1,4 @@
-global class s1_ngForceController {
+global class ngForceController {
 
     /*
     * Modified Version of RemoteTKController

@@ -1,4 +1,4 @@
-<apex:component controller="s1_ngForceController">
+<apex:component controller="ngForceController">
 
     <script>
     window.apiSid = '{!$Api.Session_ID}';
