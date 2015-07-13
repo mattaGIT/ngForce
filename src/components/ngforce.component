@@ -1,10 +1,18 @@
-<apex:component controller="ngForceController">
+<apex:component controller="s1_ngForceController">
 
-<script>
-	window.apiSid = '{!$Api.Session_ID}';
-</script>
+    <script>
+    window.apiSid = '{!$Api.Session_ID}';
 
-<!-- 
+    var sitePrefix = '{!$Site.Prefix}';
+    if (sitePrefix === '') sitePrefix = '/apex';
+
+    angular.module('ngForce.config', []).constant('ngForceConfig', {
+        sessionId: '{!$Api.Session_ID}',
+        sitePrefix: sitePrefix
+    });
+    </script>
+
+    <!-- 
     This component is intentionally blank and is used soley to enforce the
     inclusion of vf remoting capabilities within including page. Ie: 
     force the inclusion of Salesforces VfRemote.js

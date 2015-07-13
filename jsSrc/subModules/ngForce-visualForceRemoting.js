@@ -109,7 +109,7 @@ angular.module('ngForce')
 				function handleResultWithPromise(result, event, nullok, deferred) {
 					if (result) {
 						if (typeof result !== 'object') {
-							result = JSON.parse(result);
+							JSON.parse(result.replace(/&quot;/g,'"'));
 						}
 						if (Array.isArray(result) && result[0].message && result[0].errorCode) {
 							deferred.reject(result);
@@ -144,45 +144,45 @@ angular.module('ngForce')
 					send: send,
 					standardOptions: standardOpts,
 					// Bulk Create
-					bulkCreate: send('ngForceController.bulkCreate', this.standardOptions, false),
+					bulkCreate: send('s1_ngForceController.bulkCreate', this.standardOptions, false),
 					// Bulk Update
-					bulkUpdate: send('ngForceController.bulkUpdate', this.standardOptions, false),
+					bulkUpdate: send('s1_ngForceController.bulkUpdate', this.standardOptions, false),
 					// Create
-					create: send('ngForceController.create', this.standardOptions, false),
+					create: send('s1_ngForceController.create', this.standardOptions, false),
 					// Clone
-					clone: send('ngForceController.sObjectKlone', this.standardOptions, false),
+					clone: send('s1_ngForceController.sObjectKlone', this.standardOptions, false),
 					// Delete
-					del: send('ngForceController.del', this.standardOptions, true),
+					del: send('s1_ngForceController.del', this.standardOptions, true),
 					// Describe
-					describe: send('ngForceController.describe', this.standardOptions, false),
+					describe: send('s1_ngForceController.describe', this.standardOptions, false),
 					// Describe Field Set
-					describeFieldSet: send('ngForceController.describeFieldSet', this.standardOptions, false),
+					describeFieldSet: send('s1_ngForceController.describeFieldSet', this.standardOptions, false),
 					// Describe Picklist Values
-					describePicklistValues: send('ngForceController.getPicklistValues', this.standardOptions, false),
+					describePicklistValues: send('s1_ngForceController.getPicklistValues', this.standardOptions, false),
 					// Get Object Type
-					getObjectType: send('ngForceController.getObjType', this.standardOptions, false),
+					getObjectType: send('s1_ngForceController.getObjType', this.standardOptions, false),
 					// Get Query Results as select2 data
-					getQueryResultsAsSelect2Data: send('ngForceController.getQueryResultsAsSelect2Data', this.standardOptions, false),
+					getQueryResultsAsSelect2Data: send('s1_ngForceController.getQueryResultsAsSelect2Data', this.standardOptions, false),
 					// Query
-					query: send('ngForceController.query', {
+					query: send('s1_ngForceController.query', {
 						escape: false,
 						timeout: 30000
 					}, false),
 					// Query from Fieldset
-					queryFromFieldset: send('ngForceController.queryFromFieldSet', {
+					queryFromFieldset: send('s1_ngForceController.queryFromFieldSet', {
 						escape: false,
 						timeout: 30000
 					}, false),
 					// Retrieve a field list for a given object.
-					retrieve: send('ngForceController.retrieve', this.standardOptions, false),
+					retrieve: send('s1_ngForceController.retrieve', this.standardOptions, false),
 					// Search (SOSL)
-					search: send('ngForceController.search', this.standardOptions, false),
+					search: send('s1_ngForceController.search', this.standardOptions, false),
 					// Soql from Fieldset
-					soqlFromFieldSet: send('ngForceController.soqlFromFieldSet', this.standardOptions, false),
+					soqlFromFieldSet: send('s1_ngForceController.soqlFromFieldSet', this.standardOptions, false),
 					// Update
-					update: send('ngForceController.updat', this.standardOptions, true),
+					update: send('s1_ngForceController.updat', this.standardOptions, true),
 					// Upsert
-					upsert: send('ngForceController.upser', this.standardOptions, true)
+					upsert: send('s1_ngForceController.upser', this.standardOptions, true)
 				};
 			}
 		};
