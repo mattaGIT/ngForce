@@ -1,16 +1,17 @@
 {
   "name": "ngForce1",
   "version": "3.1.0",
-  "homepage": "https://github.com/noeticpenguin/ngForce",
+  "homepage": "https://github.com/mattaGIT/ngForce.git",
   "authors": [
     "Kevin Poorman <kjp@brightleafsoftware.com>",
     "Matthew McKinley <matt@silvelrinecrm.com>"
   ],
-  "description": "Fork of ngForce using gulp build tools and more modular dependency injection.",
+  "description": "Fork of ngForce for use with Lightning,VF, and pure HTML apps. Makes including ngForce1 simpler and more modular. Fixes dependency injection. Uses gulp/bower build tools.",
   "main": [
-    "./build/ngForce.min.js"
+    "./build/ngForce1.min.js"
   ],
   "keywords": [
+    "lightning",
     "salesforce",
     "angular"
   ],
@@ -25,6 +26,7 @@
   "dependencies": {
     "restangular": "~1.5.1",
     "lodash": "~3.10.0",
-    "stringview": "*"
+    "stringview": "*",
+    "angular": "~1.4.3"
   }
 }
