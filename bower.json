@@ -27,6 +27,14 @@
     "restangular": "~1.5.1",
     "lodash": "~3.10.0",
     "stringview": "*",
-    "angular": "~1.4.3"
+    "angular": "~1.4.3",
+    "AngularJS-Scope.SafeApply": "https://github.com/yearofmoo/AngularJS-Scope.SafeApply.git"
+  },
+  "overrides": {
+    "AngularJS-Scope.SafeApply": {
+      "main": [
+        "src/Scope.SafeApply.js"
+      ]
+    }
   }
 }

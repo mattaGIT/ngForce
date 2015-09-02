@@ -23,17 +23,21 @@ gulp.task('cleanBuild', function() {
 
 gulp.task('ngForce', function() {
     return gulp.src(srcBlob)
+        .pipe(plugins.order([
+            '**/ngForce.js',
+            '**/subModules/*'
+        ]))
         .pipe(plugins.concat('ngForce1.js'))
         .pipe(gulp.dest('./build'));
 });
 gulp.task('ngForceWithDependencies', function() {
-    return gulp.src(['./build/ngForce.js','./build/lib.js'])
+    return gulp.src(['./build/lib.js','./build/ngForce1.js'])
         .pipe(plugins.concat('ngForce1WithDeps.js'))
         .pipe(gulp.dest('./build'));
 });
 gulp.task('ngForceWithDependenciesMinified', function() {
-    return gulp.src(['./build/ngForce.js','./build/lib.js'])
-        .pipe(uglify())
+    return gulp.src(['./build/lib.js','./build/ngForce1.js'])
+        .pipe(uglify({"mangle":false}))
         .pipe(plugins.concat('ngForce1WithDeps.min.js'))
         .pipe(gulp.dest('./build'));
 });
@@ -50,8 +54,7 @@ gulp.task('dependencies', function() {
             '**/angular.js',
             '**/angular-*.js',
             '**/lo-dash.compat.js',
-            '**/safeApply.js',
-            '**/ngForce/**/*.js'
+            '**/safeApply.js'
         ]))
 
     .pipe(plugins.concat('lib.js'))
@@ -77,26 +80,26 @@ gulp.task('zip-staticresource', function() {
     return gulp.src('build/**/*')
 
     .pipe(plugins.zip('ngForce1.resource'))
-        .pipe(gulp.dest('../src/staticresources'));
+        .pipe(gulp.dest('./src/staticresources'));
 });
 
 gulp.task('meta-staticresource', function() {
     return createFileFromString('ngForce1.resource-meta.xml', '<?xml version="1.0" encoding="UTF-8"?><StaticResource xmlns="http://soap.sforce.com/2006/04/metadata"><cacheControl>Private</cacheControl><contentType>application/octet-stream</contentType></StaticResource>')
-        .pipe(gulp.dest('../src/staticresources'));
+        .pipe(gulp.dest('./src/staticresources'));
 });
 
 gulp.task('meta-page', function() {
     return createFileFromString('ngForce1.page-meta.xml', '<?xml version="1.0" encoding="UTF-8"?><ApexPage xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>33.0</apiVersion><availableInTouch>true</availableInTouch><label>ngForce1</label></ApexPage>')
-        .pipe(gulp.dest('../src/pages'));
+        .pipe(gulp.dest('./src/pages'));
 });
 
 gulp.task('vf-page', function() {
     return gulp.src('./app/ngForce1.page')
-        .pipe(gulp.dest('../src/pages'));
+        .pipe(gulp.dest('./src/pages'));
 });
-gulp.task('save-static-resource-zip', ['meta-staticresource', 'zip-staticresource']);
+gulp.task('save', ['meta-staticresource', 'zip-staticresource']);
 //for making minified src
-gulp.task('combine', ['ngForceWithDependencies', 'ngForceWithDependenciesMinified']);
+gulp.task('combine', ['ngForceWithDependencies']);
 gulp.task('build', ['dependencies', 'ngForce']);
 gulp.task('cleanAndBuild', ['cleanBuild']);
 //define order
