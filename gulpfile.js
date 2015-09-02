@@ -77,22 +77,22 @@ gulp.task('zip-staticresource', function() {
     return gulp.src('build/**/*')
 
     .pipe(plugins.zip('ngForce1.resource'))
-        .pipe(gulp.dest('../src/staticresources'));
+        .pipe(gulp.dest('./src/staticresources'));
 });
 
 gulp.task('meta-staticresource', function() {
     return createFileFromString('ngForce1.resource-meta.xml', '<?xml version="1.0" encoding="UTF-8"?><StaticResource xmlns="http://soap.sforce.com/2006/04/metadata"><cacheControl>Private</cacheControl><contentType>application/octet-stream</contentType></StaticResource>')
-        .pipe(gulp.dest('../src/staticresources'));
+        .pipe(gulp.dest('./src/staticresources'));
 });
 
 gulp.task('meta-page', function() {
     return createFileFromString('ngForce1.page-meta.xml', '<?xml version="1.0" encoding="UTF-8"?><ApexPage xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>33.0</apiVersion><availableInTouch>true</availableInTouch><label>ngForce1</label></ApexPage>')
-        .pipe(gulp.dest('../src/pages'));
+        .pipe(gulp.dest('./src/pages'));
 });
 
 gulp.task('vf-page', function() {
     return gulp.src('./app/ngForce1.page')
-        .pipe(gulp.dest('../src/pages'));
+        .pipe(gulp.dest('./src/pages'));
 });
 gulp.task('save-static-resource-zip', ['meta-staticresource', 'zip-staticresource']);
 //for making minified src
