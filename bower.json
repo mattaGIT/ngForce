@@ -1,6 +1,6 @@
 {
   "name": "ngForce1",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "homepage": "https://github.com/mattaGIT/ngForce.git",
   "authors": [
     "Kevin Poorman <kjp@brightleafsoftware.com>",
@@ -8,7 +8,7 @@
   ],
   "description": "Fork of ngForce for use with Lightning,VF, and pure HTML apps. Makes including ngForce1 simpler and more modular. Fixes dependency injection. Uses gulp/bower build tools.",
   "main": [
-    "./build/ngForce1.min.js"
+    "./build/ngForce1WithDeps.min.js"
   ],
   "keywords": [
     "lightning",
@@ -27,6 +27,12 @@
     "restangular": "~1.5.1",
     "lodash": "~3.10.0",
     "stringview": "*",
-    "angular": "~1.4.3"
+    "angular": "~1.4.3",
+    "AngularJS-Scope.SafeApply": "https://github.com/yearofmoo/AngularJS-Scope.SafeApply.git"
+  },
+  "overrides": {
+    "AngularJS-Scope.SafeApply": {
+      "main":  ["./src/Scope.SafeApply.js"]
+    }
   }
 }

@@ -1,5 +1,5 @@
 /**
- * @license AngularJS v1.4.3
+ * @license AngularJS v1.4.5
  * (c) 2010-2015 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -57,7 +57,7 @@ function minErr(module, ErrorConstructor) {
       return match;
     });
 
-    message += '\nhttp://errors.angularjs.org/1.4.3/' +
+    message += '\nhttp://errors.angularjs.org/1.4.5/' +
       (module ? module + '/' : '') + code;
 
     for (i = SKIP_INDEXES, paramPrefix = '?'; i < templateArgs.length; i++, paramPrefix = '&') {
@@ -423,6 +423,8 @@ function baseExtend(dst, objs, deep) {
       if (deep && isObject(src)) {
         if (isDate(src)) {
           dst[key] = new Date(src.valueOf());
+        } else if (isRegExp(src)) {
+          dst[key] = new RegExp(src);
         } else {
           if (!isObject(dst[key])) dst[key] = isArray(src) ? [] : {};
           baseExtend(dst[key], [src], true);
@@ -1053,22 +1055,39 @@ function equals(o1, o2) {
 }
 
 var csp = function() {
-  if (isDefined(csp.isActive_)) return csp.isActive_;
+  if (!isDefined(csp.rules)) {
 
-  var active = !!(document.querySelector('[ng-csp]') ||
-                  document.querySelector('[data-ng-csp]'));
 
-  if (!active) {
+    var ngCspElement = (document.querySelector('[ng-csp]') ||
+                    document.querySelector('[data-ng-csp]'));
+
+    if (ngCspElement) {
+      var ngCspAttribute = ngCspElement.getAttribute('ng-csp') ||
+                    ngCspElement.getAttribute('data-ng-csp');
+      csp.rules = {
+        noUnsafeEval: !ngCspAttribute || (ngCspAttribute.indexOf('no-unsafe-eval') !== -1),
+        noInlineStyle: !ngCspAttribute || (ngCspAttribute.indexOf('no-inline-style') !== -1)
+      };
+    } else {
+      csp.rules = {
+        noUnsafeEval: noUnsafeEval(),
+        noInlineStyle: false
+      };
+    }
+  }
+
+  return csp.rules;
+
+  function noUnsafeEval() {
     try {
       /* jshint -W031, -W054 */
       new Function('');
       /* jshint +W031, +W054 */
+      return false;
     } catch (e) {
-      active = true;
+      return true;
     }
   }
-
-  return (csp.isActive_ = active);
 };
 
 /**
@@ -1300,13 +1319,19 @@ function tryDecodeURIComponent(value) {
  * @returns {Object.<string,boolean|Array>}
  */
 function parseKeyValue(/**string*/keyValue) {
-  var obj = {}, key_value, key;
+  var obj = {};
   forEach((keyValue || "").split('&'), function(keyValue) {
+    var splitPoint, key, val;
     if (keyValue) {
-      key_value = keyValue.replace(/\+/g,'%20').split('=');
-      key = tryDecodeURIComponent(key_value[0]);
+      key = keyValue = keyValue.replace(/\+/g,'%20');
+      splitPoint = keyValue.indexOf('=');
+      if (splitPoint !== -1) {
+        key = keyValue.substring(0, splitPoint);
+        val = keyValue.substring(splitPoint + 1);
+      }
+      key = tryDecodeURIComponent(key);
       if (isDefined(key)) {
-        var val = isDefined(key_value[1]) ? tryDecodeURIComponent(key_value[1]) : true;
+        val = isDefined(val) ? tryDecodeURIComponent(val) : true;
         if (!hasOwnProperty.call(obj, key)) {
           obj[key] = val;
         } else if (isArray(obj[key])) {
@@ -1902,8 +1927,8 @@ function setupModuleLoader(window) {
      * All modules (angular core or 3rd party) that should be available to an application must be
      * registered using this mechanism.
      *
-     * When passed two or more arguments, a new module is created.  If passed only one argument, an
-     * existing module (the name passed as the first argument to `module`) is retrieved.
+     * Passing one argument retrieves an existing {@link angular.Module},
+     * whereas passing more than one argument creates a new {@link angular.Module}
      *
      *
      * # Module
@@ -2244,7 +2269,6 @@ function toDebugString(obj) {
 /* global angularModule: true,
   version: true,
 
-  $LocaleProvider,
   $CompileProvider,
 
   htmlAnchorDirective,
@@ -2261,7 +2285,6 @@ function toDebugString(obj) {
   ngClassDirective,
   ngClassEvenDirective,
   ngClassOddDirective,
-  ngCspDirective,
   ngCloakDirective,
   ngControllerDirective,
   ngFormDirective,
@@ -2298,6 +2321,7 @@ function toDebugString(obj) {
 
   $AnchorScrollProvider,
   $AnimateProvider,
+  $CoreAnimateCssProvider,
   $$CoreAnimateQueueProvider,
   $$CoreAnimateRunnerProvider,
   $BrowserProvider,
@@ -2306,6 +2330,7 @@ function toDebugString(obj) {
   $DocumentProvider,
   $ExceptionHandlerProvider,
   $FilterProvider,
+  $$ForceReflowProvider,
   $InterpolateProvider,
   $IntervalProvider,
   $$HashMapProvider,
@@ -2349,11 +2374,11 @@ function toDebugString(obj) {
  * - `codeName` – `{string}` – Code name of the release, such as "jiggling-armfat".
  */
 var version = {
-  full: '1.4.3',    // all of these placeholder strings will be replaced by grunt's
+  full: '1.4.5',    // all of these placeholder strings will be replaced by grunt's
   major: 1,    // package task
   minor: 4,
-  dot: 3,
-  codeName: 'foam-acceleration'
+  dot: 5,
+  codeName: 'permanent-internship'
 };
 
 
@@ -2392,11 +2417,6 @@ function publishExternalAPI(angular) {
   });
 
   angularModule = setupModuleLoader(window);
-  try {
-    angularModule('ngLocale');
-  } catch (e) {
-    angularModule('ngLocale', []).provider('$locale', $LocaleProvider);
-  }
 
   angularModule('ng', ['ngLocale'], ['$provide',
     function ngModule($provide) {
@@ -2459,6 +2479,7 @@ function publishExternalAPI(angular) {
       $provide.provider({
         $anchorScroll: $AnchorScrollProvider,
         $animate: $AnimateProvider,
+        $animateCss: $CoreAnimateCssProvider,
         $$animateQueue: $$CoreAnimateQueueProvider,
         $$AnimateRunner: $$CoreAnimateRunnerProvider,
         $browser: $BrowserProvider,
@@ -2467,6 +2488,7 @@ function publishExternalAPI(angular) {
         $document: $DocumentProvider,
         $exceptionHandler: $ExceptionHandlerProvider,
         $filter: $FilterProvider,
+        $$forceReflow: $$ForceReflowProvider,
         $interpolate: $InterpolateProvider,
         $interval: $IntervalProvider,
         $http: $HttpProvider,
@@ -2561,7 +2583,7 @@ function publishExternalAPI(angular) {
  * - [`html()`](http://api.jquery.com/html/)
  * - [`next()`](http://api.jquery.com/next/) - Does not support selectors
  * - [`on()`](http://api.jquery.com/on/) - Does not support namespaces, selectors or eventData
- * - [`off()`](http://api.jquery.com/off/) - Does not support namespaces or selectors
+ * - [`off()`](http://api.jquery.com/off/) - Does not support namespaces, selectors or event object as parameter
  * - [`one()`](http://api.jquery.com/one/) - Does not support namespaces or selectors
  * - [`parent()`](http://api.jquery.com/parent/) - Does not support selectors
  * - [`prepend()`](http://api.jquery.com/prepend/)
@@ -2575,7 +2597,7 @@ function publishExternalAPI(angular) {
  * - [`text()`](http://api.jquery.com/text/)
  * - [`toggleClass()`](http://api.jquery.com/toggleClass/)
  * - [`triggerHandler()`](http://api.jquery.com/triggerHandler/) - Passes a dummy event object to handlers.
- * - [`unbind()`](http://api.jquery.com/unbind/) - Does not support namespaces
+ * - [`unbind()`](http://api.jquery.com/unbind/) - Does not support namespaces or event object as parameter
  * - [`val()`](http://api.jquery.com/val/)
  * - [`wrap()`](http://api.jquery.com/wrap/)
  *
@@ -3686,7 +3708,7 @@ var $$HashMapProvider = [function() {
  * Implicit module which gets automatically added to each {@link auto.$injector $injector}.
  */
 
-var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
+var FN_ARGS = /^[^\(]*\(\s*([^\)]*)\)/m;
 var FN_ARG_SPLIT = /,/;
 var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
 var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -4342,6 +4364,7 @@ function createInjector(modulesToLoad, strictDi) {
   // Module Loading
   ////////////////////////////////////
   function loadModules(modulesToLoad) {
+    assertArg(isUndefined(modulesToLoad) || isArray(modulesToLoad), 'modulesToLoad', 'not an array');
     var runBlocks = [], moduleFn;
     forEach(modulesToLoad, function(module) {
       if (loadedModules.get(module)) return;
@@ -4851,31 +4874,31 @@ var $$CoreAnimateQueueProvider = function() {
     };
 
     function addRemoveClassesPostDigest(element, add, remove) {
-      var data = postDigestQueue.get(element);
-      var classVal;
+      var classVal, data = postDigestQueue.get(element);
 
       if (!data) {
         postDigestQueue.put(element, data = {});
         postDigestElements.push(element);
       }
 
-      if (add) {
-        forEach(add.split(' '), function(className) {
-          if (className) {
-            data[className] = true;
-          }
-        });
-      }
+      var updateData = function(classes, value) {
+        var changed = false;
+        if (classes) {
+          classes = isString(classes) ? classes.split(' ') :
+                    isArray(classes) ? classes : [];
+          forEach(classes, function(className) {
+            if (className) {
+              changed = true;
+              data[className] = value;
+            }
+          });
+        }
+        return changed;
+      };
 
-      if (remove) {
-        forEach(remove.split(' '), function(className) {
-          if (className) {
-            data[className] = false;
-          }
-        });
-      }
-
-      if (postDigestElements.length > 1) return;
+      var classesAdded = updateData(add, true);
+      var classesRemoved = updateData(remove, false);
+      if ((!classesAdded && !classesRemoved) || postDigestElements.length > 1) return;
 
       $rootScope.$$postDigest(function() {
         forEach(postDigestElements, function(element) {
@@ -5334,15 +5357,88 @@ var $AnimateProvider = ['$provide', function($provide) {
   }];
 }];
 
-function $$AsyncCallbackProvider() {
-  this.$get = ['$$rAF', '$timeout', function($$rAF, $timeout) {
-    return $$rAF.supported
-      ? function(fn) { return $$rAF(fn); }
-      : function(fn) {
-        return $timeout(fn, 0, false);
+/**
+ * @ngdoc service
+ * @name $animateCss
+ * @kind object
+ *
+ * @description
+ * This is the core version of `$animateCss`. By default, only when the `ngAnimate` is included,
+ * then the `$animateCss` service will actually perform animations.
+ *
+ * Click here {@link ngAnimate.$animateCss to read the documentation for $animateCss}.
+ */
+var $CoreAnimateCssProvider = function() {
+  this.$get = ['$$rAF', '$q', function($$rAF, $q) {
+
+    var RAFPromise = function() {};
+    RAFPromise.prototype = {
+      done: function(cancel) {
+        this.defer && this.defer[cancel === true ? 'reject' : 'resolve']();
+      },
+      end: function() {
+        this.done();
+      },
+      cancel: function() {
+        this.done(true);
+      },
+      getPromise: function() {
+        if (!this.defer) {
+          this.defer = $q.defer();
+        }
+        return this.defer.promise;
+      },
+      then: function(f1,f2) {
+        return this.getPromise().then(f1,f2);
+      },
+      'catch': function(f1) {
+        return this.getPromise()['catch'](f1);
+      },
+      'finally': function(f1) {
+        return this.getPromise()['finally'](f1);
+      }
+    };
+
+    return function(element, options) {
+      if (options.from) {
+        element.css(options.from);
+        options.from = null;
+      }
+
+      var closed, runner = new RAFPromise();
+      return {
+        start: run,
+        end: run
       };
+
+      function run() {
+        $$rAF(function() {
+          close();
+          if (!closed) {
+            runner.done();
+          }
+          closed = true;
+        });
+        return runner;
+      }
+
+      function close() {
+        if (options.addClass) {
+          element.addClass(options.addClass);
+          options.addClass = null;
+        }
+        if (options.removeClass) {
+          element.removeClass(options.removeClass);
+          options.removeClass = null;
+        }
+        if (options.to) {
+          element.css(options.to);
+          options.to = null;
+        }
+      }
+    };
   }];
-}
+};
 
 /* global stripHash: true */
 
@@ -6506,7 +6602,7 @@ function $TemplateCacheProvider() {
  *     otherwise the {@link error:$compile:ctreq Missing Required Controller} error is thrown.
  *
  *     Note that you can also require the directive's own controller - it will be made available like
- *     like any other controller.
+ *     any other controller.
  *
  *   * `transcludeFn` - A transclude linking function pre-bound to the correct transclusion scope.
  *     This is the same as the `$transclude`
@@ -6532,7 +6628,7 @@ function $TemplateCacheProvider() {
  *
  * ### Transclusion
  *
- * Transclusion is the process of extracting a collection of DOM element from one part of the DOM and
+ * Transclusion is the process of extracting a collection of DOM elements from one part of the DOM and
  * copying them to another part of the DOM, while maintaining their connection to the original AngularJS
  * scope from where they were taken.
  *
@@ -7287,7 +7383,7 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
         listeners.push(fn);
         $rootScope.$evalAsync(function() {
-          if (!listeners.$$inter && attrs.hasOwnProperty(key)) {
+          if (!listeners.$$inter && attrs.hasOwnProperty(key) && !isUndefined(attrs[key])) {
             // no one registered attribute interpolation function, so lets call it manually
             fn(attrs[key]);
           }
@@ -8666,24 +8762,19 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
         lastValue,
         parentGet, parentSet, compare;
 
-        if (!hasOwnProperty.call(attrs, attrName)) {
-          // In the case of user defined a binding with the same name as a method in Object.prototype but didn't set
-          // the corresponding attribute. We need to make sure subsequent code won't access to the prototype function
-          attrs[attrName] = undefined;
-        }
-
         switch (mode) {
 
           case '@':
-            if (!attrs[attrName] && !optional) {
-              destination[scopeName] = undefined;
+            if (!optional && !hasOwnProperty.call(attrs, attrName)) {
+              destination[scopeName] = attrs[attrName] = void 0;
             }
-
             attrs.$observe(attrName, function(value) {
-              destination[scopeName] = value;
+              if (isString(value)) {
+                destination[scopeName] = value;
+              }
             });
             attrs.$$observers[attrName].$$scope = scope;
-            if (attrs[attrName]) {
+            if (isString(attrs[attrName])) {
               // If the attribute has been provided then we trigger an interpolation to ensure
               // the value is there for use in the link fn
               destination[scopeName] = $interpolate(attrs[attrName])(scope);
@@ -8691,11 +8782,13 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
             break;
 
           case '=':
-            if (optional && !attrs[attrName]) {
-              return;
+            if (!hasOwnProperty.call(attrs, attrName)) {
+              if (optional) break;
+              attrs[attrName] = void 0;
             }
-            parentGet = $parse(attrs[attrName]);
+            if (optional && !attrs[attrName]) break;
 
+            parentGet = $parse(attrs[attrName]);
             if (parentGet.literal) {
               compare = equals;
             } else {
@@ -8734,7 +8827,8 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
             break;
 
           case '&':
-            parentGet = $parse(attrs[attrName]);
+            // Don't assign Object.prototype method to scope
+            parentGet = attrs.hasOwnProperty(attrName) ? $parse(attrs[attrName]) : noop;
 
             // Don't assign noop to destination if expression is not valid
             if (parentGet === noop && optional) break;
@@ -9111,6 +9205,29 @@ function $ExceptionHandlerProvider() {
   }];
 }
 
+var $$ForceReflowProvider = function() {
+  this.$get = ['$document', function($document) {
+    return function(domNode) {
+      //the line below will force the browser to perform a repaint so
+      //that all the animated elements within the animation frame will
+      //be properly updated and drawn on screen. This is required to
+      //ensure that the preparation animation is properly flushed so that
+      //the active state picks up from there. DO NOT REMOVE THIS LINE.
+      //DO NOT OPTIMIZE THIS LINE. THE MINIFIER WILL REMOVE IT OTHERWISE WHICH
+      //WILL RESULT IN AN UNPREDICTABLE BUG THAT IS VERY HARD TO TRACK DOWN AND
+      //WILL TAKE YEARS AWAY FROM YOUR LIFE.
+      if (domNode) {
+        if (!domNode.nodeType && domNode instanceof jqLite) {
+          domNode = domNode[0];
+        }
+      } else {
+        domNode = $document[0].body;
+      }
+      return domNode.offsetWidth + 1;
+    };
+  }];
+};
+
 var APPLICATION_JSON = 'application/json';
 var CONTENT_TYPE_APPLICATION_JSON = {'Content-Type': APPLICATION_JSON + ';charset=utf-8'};
 var JSON_START = /^\[|^\{(?!\{)/;
@@ -9119,6 +9236,12 @@ var JSON_ENDS = {
   '{': /}$/
 };
 var JSON_PROTECTION_PREFIX = /^\)\]\}',?\n/;
+var $httpMinErr = minErr('$http');
+var $httpMinErrLegacyFn = function(method) {
+  return function() {
+    throw $httpMinErr('legacy', 'The method `{0}` on the promise returned from `$http` has been disabled.', method);
+  };
+};
 
 function serializeValue(v) {
   if (isObject(v)) {
@@ -9219,8 +9342,8 @@ function $HttpParamSerializerJQLikeProvider() {
       function serialize(toSerialize, prefix, topLevel) {
         if (toSerialize === null || isUndefined(toSerialize)) return;
         if (isArray(toSerialize)) {
-          forEach(toSerialize, function(value) {
-            serialize(value, prefix + '[]');
+          forEach(toSerialize, function(value, index) {
+            serialize(value, prefix + '[' + (isObject(value) ? index : '') + ']');
           });
         } else if (isObject(toSerialize) && !isDate(toSerialize)) {
           forEachSorted(toSerialize, function(value, key) {
@@ -9441,6 +9564,30 @@ function $HttpProvider() {
     return useApplyAsync;
   };
 
+  var useLegacyPromise = true;
+  /**
+   * @ngdoc method
+   * @name $httpProvider#useLegacyPromiseExtensions
+   * @description
+   *
+   * Configure `$http` service to return promises without the shorthand methods `success` and `error`.
+   * This should be used to make sure that applications work without these methods.
+   *
+   * Defaults to false. If no value is specified, returns the current configured value.
+   *
+   * @param {boolean=} value If true, `$http` will return a normal promise without the `success` and `error` methods.
+   *
+   * @returns {boolean|Object} If a value is specified, returns the $httpProvider for chaining.
+   *    otherwise, returns the current configured value.
+   **/
+  this.useLegacyPromiseExtensions = function(value) {
+    if (isDefined(value)) {
+      useLegacyPromise = !!value;
+      return this;
+    }
+    return useLegacyPromise;
+  };
+
   /**
    * @ngdoc property
    * @name $httpProvider#interceptors
@@ -9507,17 +9654,15 @@ function $HttpProvider() {
      *
      * ## General usage
      * The `$http` service is a function which takes a single argument — a configuration object —
-     * that is used to generate an HTTP request and returns  a {@link ng.$q promise}
-     * with two $http specific methods: `success` and `error`.
+     * that is used to generate an HTTP request and returns  a {@link ng.$q promise}.
      *
      * ```js
      *   // Simple GET request example :
      *   $http.get('/someUrl').
-     *     success(function(data, status, headers, config) {
+     *     then(function(response) {
      *       // this callback will be called asynchronously
      *       // when the response is available
-     *     }).
-     *     error(function(data, status, headers, config) {
+     *     }, function(response) {
      *       // called asynchronously if an error occurs
      *       // or server returns response with an error status.
      *     });
@@ -9526,21 +9671,23 @@ function $HttpProvider() {
      * ```js
      *   // Simple POST request example (passing data) :
      *   $http.post('/someUrl', {msg:'hello word!'}).
-     *     success(function(data, status, headers, config) {
+     *     then(function(response) {
      *       // this callback will be called asynchronously
      *       // when the response is available
-     *     }).
-     *     error(function(data, status, headers, config) {
+     *     }, function(response) {
      *       // called asynchronously if an error occurs
      *       // or server returns response with an error status.
      *     });
      * ```
      *
+     * The response object has these properties:
      *
-     * Since the returned value of calling the $http function is a `promise`, you can also use
-     * the `then` method to register callbacks, and these callbacks will receive a single argument –
-     * an object representing the response. See the API signature and type info below for more
-     * details.
+     *   - **data** – `{string|Object}` – The response body transformed with the transform
+     *     functions.
+     *   - **status** – `{number}` – HTTP status code of the response.
+     *   - **headers** – `{function([headerName])}` – Header getter function.
+     *   - **config** – `{Object}` – The configuration object that was used to generate the request.
+     *   - **statusText** – `{string}` – HTTP status text of the response.
      *
      * A response status code between 200 and 299 is considered a success status and
      * will result in the success callback being called. Note that if the response is a redirect,
@@ -9564,8 +9711,8 @@ function $HttpProvider() {
      * request data must be passed in for POST/PUT requests.
      *
      * ```js
-     *   $http.get('/someUrl').success(successCallback);
-     *   $http.post('/someUrl', data).success(successCallback);
+     *   $http.get('/someUrl').then(successCallback);
+     *   $http.post('/someUrl', data).then(successCallback);
      * ```
      *
      * Complete list of shortcut methods:
@@ -9578,6 +9725,14 @@ function $HttpProvider() {
      * - {@link ng.$http#jsonp $http.jsonp}
      * - {@link ng.$http#patch $http.patch}
      *
+     *
+     * ## Deprecation Notice
+     * <div class="alert alert-danger">
+     *   The `$http` legacy promise methods `success` and `error` have been deprecated.
+     *   Use the standard `then` method instead.
+     *   If {@link $httpProvider#useLegacyPromiseExtensions `$httpProvider.useLegacyPromiseExtensions`} is set to
+     *   `false` then these methods will throw {@link $http:legacy `$http/legacy`} error.
+     * </div>
      *
      * ## Setting HTTP Headers
      *
@@ -9622,7 +9777,7 @@ function $HttpProvider() {
      *  data: { test: 'test' }
      * }
      *
-     * $http(req).success(function(){...}).error(function(){...});
+     * $http(req).then(function(){...}, function(){...});
      * ```
      *
      * ## Transforming Requests and Responses
@@ -9854,7 +10009,6 @@ function $HttpProvider() {
      * In order to prevent collisions in environments where multiple Angular apps share the
      * same domain or subdomain, we recommend that each application uses unique cookie name.
      *
-     *
      * @param {object} config Object describing the request to be made and how it should be
      *    processed. The object has following properties:
      *
@@ -9899,20 +10053,9 @@ function $HttpProvider() {
      *    - **responseType** - `{string}` - see
      *      [XMLHttpRequest.responseType](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest#xmlhttprequest-responsetype).
      *
-     * @returns {HttpPromise} Returns a {@link ng.$q promise} object with the
-     *   standard `then` method and two http specific methods: `success` and `error`. The `then`
-     *   method takes two arguments a success and an error callback which will be called with a
-     *   response object. The `success` and `error` methods take a single argument - a function that
-     *   will be called when the request succeeds or fails respectively. The arguments passed into
-     *   these functions are destructured representation of the response object passed into the
-     *   `then` method. The response object has these properties:
+     * @returns {HttpPromise} Returns a {@link ng.$q `Promise}` that will be resolved to a response object
+     *                        when the request succeeds or fails.
      *
-     *   - **data** – `{string|Object}` – The response body transformed with the transform
-     *     functions.
-     *   - **status** – `{number}` – HTTP status code of the response.
-     *   - **headers** – `{function([headerName])}` – Header getter function.
-     *   - **config** – `{Object}` – The configuration object that was used to generate the request.
-     *   - **statusText** – `{string}` – HTTP status text of the response.
      *
      * @property {Array.<Object>} pendingRequests Array of config objects for currently pending
      *   requests. This is primarily meant to be used for debugging purposes.
@@ -9954,13 +10097,12 @@ function $HttpProvider() {
           $scope.response = null;
 
           $http({method: $scope.method, url: $scope.url, cache: $templateCache}).
-            success(function(data, status) {
-              $scope.status = status;
-              $scope.data = data;
-            }).
-            error(function(data, status) {
-              $scope.data = data || "Request failed";
-              $scope.status = status;
+            then(function(response) {
+              $scope.status = response.status;
+              $scope.data = response.data;
+            }, function(response) {
+              $scope.data = response.data || "Request failed";
+              $scope.status = response.status;
           });
         };
 
@@ -10065,23 +10207,28 @@ function $HttpProvider() {
         promise = promise.then(thenFn, rejectFn);
       }
 
-      promise.success = function(fn) {
-        assertArgFn(fn, 'fn');
+      if (useLegacyPromise) {
+        promise.success = function(fn) {
+          assertArgFn(fn, 'fn');
 
-        promise.then(function(response) {
-          fn(response.data, response.status, response.headers, config);
-        });
-        return promise;
-      };
+          promise.then(function(response) {
+            fn(response.data, response.status, response.headers, config);
+          });
+          return promise;
+        };
 
-      promise.error = function(fn) {
-        assertArgFn(fn, 'fn');
+        promise.error = function(fn) {
+          assertArgFn(fn, 'fn');
 
-        promise.then(null, function(response) {
-          fn(response.data, response.status, response.headers, config);
-        });
-        return promise;
-      };
+          promise.then(null, function(response) {
+            fn(response.data, response.status, response.headers, config);
+          });
+          return promise;
+        };
+      } else {
+        promise.success = $httpMinErrLegacyFn('success');
+        promise.error = $httpMinErrLegacyFn('error');
+      }
 
       return promise;
 
@@ -10460,7 +10607,7 @@ function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDoc
       xhr.onload = function requestLoaded() {
         var statusText = xhr.statusText || '';
 
-        // responseText is the old-school way of retrieving response (supported by IE8 & 9)
+        // responseText is the old-school way of retrieving response (supported by IE9)
         // response/responseType properties were introduced in XHR Level2 spec (supported by IE10)
         var response = ('response' in xhr) ? xhr.response : xhr.responseText;
 
@@ -11098,7 +11245,7 @@ function $IntervalProvider() {
       * @description
       * Cancels a task associated with the `promise`.
       *
-      * @param {promise} promise returned by the `$interval` function.
+      * @param {Promise=} promise returned by the `$interval` function.
       * @returns {boolean} Returns `true` if the task was successfully canceled.
       */
     interval.cancel = function(promise) {
@@ -11125,75 +11272,6 @@ function $IntervalProvider() {
  *
  * * `id` – `{string}` – locale id formatted as `languageId-countryId` (e.g. `en-us`)
  */
-function $LocaleProvider() {
-  this.$get = function() {
-    return {
-      id: 'en-us',
-
-      NUMBER_FORMATS: {
-        DECIMAL_SEP: '.',
-        GROUP_SEP: ',',
-        PATTERNS: [
-          { // Decimal Pattern
-            minInt: 1,
-            minFrac: 0,
-            maxFrac: 3,
-            posPre: '',
-            posSuf: '',
-            negPre: '-',
-            negSuf: '',
-            gSize: 3,
-            lgSize: 3
-          },{ //Currency Pattern
-            minInt: 1,
-            minFrac: 2,
-            maxFrac: 2,
-            posPre: '\u00A4',
-            posSuf: '',
-            negPre: '(\u00A4',
-            negSuf: ')',
-            gSize: 3,
-            lgSize: 3
-          }
-        ],
-        CURRENCY_SYM: '$'
-      },
-
-      DATETIME_FORMATS: {
-        MONTH:
-            'January,February,March,April,May,June,July,August,September,October,November,December'
-            .split(','),
-        SHORTMONTH:  'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec'.split(','),
-        DAY: 'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday'.split(','),
-        SHORTDAY: 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(','),
-        AMPMS: ['AM','PM'],
-        medium: 'MMM d, y h:mm:ss a',
-        'short': 'M/d/yy h:mm a',
-        fullDate: 'EEEE, MMMM d, y',
-        longDate: 'MMMM d, y',
-        mediumDate: 'MMM d, y',
-        shortDate: 'M/d/yy',
-        mediumTime: 'h:mm:ss a',
-        shortTime: 'h:mm a',
-        ERANAMES: [
-          "Before Christ",
-          "Anno Domini"
-        ],
-        ERAS: [
-          "BC",
-          "AD"
-        ]
-      },
-
-      pluralCat: function(num) {
-        if (num === 1) {
-          return 'one';
-        }
-        return 'other';
-      }
-    };
-  };
-}
 
 var PATH_MATCH = /^([^\?#]*)(\?([^#]*))?(#(.*))?$/,
     DEFAULT_PORTS = {'http': 80, 'https': 443, 'ftp': 21};
@@ -11284,12 +11362,12 @@ function serverBase(url) {
  *
  * @constructor
  * @param {string} appBase application base URL
+ * @param {string} appBaseNoFile application base URL stripped of any filename
  * @param {string} basePrefix url path prefix
  */
-function LocationHtml5Url(appBase, basePrefix) {
+function LocationHtml5Url(appBase, appBaseNoFile, basePrefix) {
   this.$$html5 = true;
   basePrefix = basePrefix || '';
-  var appBaseNoFile = stripFile(appBase);
   parseAbsoluteUrl(appBase, this);
 
 
@@ -11363,10 +11441,10 @@ function LocationHtml5Url(appBase, basePrefix) {
  *
  * @constructor
  * @param {string} appBase application base URL
+ * @param {string} appBaseNoFile application base URL stripped of any filename
  * @param {string} hashPrefix hashbang prefix
  */
-function LocationHashbangUrl(appBase, hashPrefix) {
-  var appBaseNoFile = stripFile(appBase);
+function LocationHashbangUrl(appBase, appBaseNoFile, hashPrefix) {
 
   parseAbsoluteUrl(appBase, this);
 
@@ -11475,13 +11553,12 @@ function LocationHashbangUrl(appBase, hashPrefix) {
  *
  * @constructor
  * @param {string} appBase application base URL
+ * @param {string} appBaseNoFile application base URL stripped of any filename
  * @param {string} hashPrefix hashbang prefix
  */
-function LocationHashbangInHtml5Url(appBase, hashPrefix) {
+function LocationHashbangInHtml5Url(appBase, appBaseNoFile, hashPrefix) {
   this.$$html5 = true;
   LocationHashbangUrl.apply(this, arguments);
-
-  var appBaseNoFile = stripFile(appBase);
 
   this.$$parseLinkUrl = function(url, relHref) {
     if (relHref && relHref[0] === '#') {
@@ -11512,7 +11589,7 @@ function LocationHashbangInHtml5Url(appBase, hashPrefix) {
         hash = this.$$hash ? '#' + encodeUriSegment(this.$$hash) : '';
 
     this.$$url = encodePath(this.$$path) + (search ? '?' + search : '') + hash;
-    // include hashPrefix in $$absUrl when $$url is empty so IE8 & 9 do not reload page because of removal of '#'
+    // include hashPrefix in $$absUrl when $$url is empty so IE9 does not reload page because of removal of '#'
     this.$$absUrl = appBase + hashPrefix + this.$$url;
   };
 
@@ -12021,7 +12098,9 @@ function $LocationProvider() {
       appBase = stripHash(initialUrl);
       LocationMode = LocationHashbangUrl;
     }
-    $location = new LocationMode(appBase, '#' + hashPrefix);
+    var appBaseNoFile = stripFile(appBase);
+
+    $location = new LocationMode(appBase, appBaseNoFile, '#' + hashPrefix);
     $location.$$parseLinkUrl(initialUrl, initialUrl);
 
     $location.$$state = $browser.state();
@@ -12101,6 +12180,13 @@ function $LocationProvider() {
 
     // update $location when $browser url changes
     $browser.onUrlChange(function(newUrl, newState) {
+
+      if (isUndefined(beginsWith(appBaseNoFile, newUrl))) {
+        // If we are navigating outside of the app then force a reload
+        $window.location.href = newUrl;
+        return;
+      }
+
       $rootScope.$evalAsync(function() {
         var oldUrl = $location.absUrl();
         var oldState = $location.$$state;
@@ -13950,29 +14036,6 @@ Parser.prototype = {
   }
 };
 
-//////////////////////////////////////////////////
-// Parser helper functions
-//////////////////////////////////////////////////
-
-function setter(obj, path, setValue, fullExp) {
-  ensureSafeObject(obj, fullExp);
-
-  var element = path.split('.'), key;
-  for (var i = 0; element.length > 1; i++) {
-    key = ensureSafeMemberName(element.shift(), fullExp);
-    var propertyObj = ensureSafeObject(obj[key], fullExp);
-    if (!propertyObj) {
-      propertyObj = {};
-      obj[key] = propertyObj;
-    }
-    obj = propertyObj;
-  }
-  key = ensureSafeMemberName(element.shift(), fullExp);
-  ensureSafeObject(obj[key], fullExp);
-  obj[key] = setValue;
-  return setValue;
-}
-
 var getterFnCacheDefault = createMap();
 var getterFnCacheExpensive = createMap();
 
@@ -14041,13 +14104,14 @@ function $ParseProvider() {
   var cacheDefault = createMap();
   var cacheExpensive = createMap();
 
-  this.$get = ['$filter', '$sniffer', function($filter, $sniffer) {
+  this.$get = ['$filter', function($filter) {
+    var noUnsafeEval = csp().noUnsafeEval;
     var $parseOptions = {
-          csp: $sniffer.csp,
+          csp: noUnsafeEval,
           expensiveChecks: false
         },
         $parseOptionsExpensive = {
-          csp: $sniffer.csp,
+          csp: noUnsafeEval,
           expensiveChecks: true
         };
 
@@ -14522,8 +14586,11 @@ function qFactory(nextTick, exceptionHandler) {
     this.$$state = { status: 0 };
   }
 
-  Promise.prototype = {
+  extend(Promise.prototype, {
     then: function(onFulfilled, onRejected, progressBack) {
+      if (isUndefined(onFulfilled) && isUndefined(onRejected) && isUndefined(progressBack)) {
+        return this;
+      }
       var result = new Deferred();
 
       this.$$state.pending = this.$$state.pending || [];
@@ -14544,7 +14611,7 @@ function qFactory(nextTick, exceptionHandler) {
         return handleCallback(error, false, callback);
       }, progressBack);
     }
-  };
+  });
 
   //Faster, more basic than angular.bind http://jsperf.com/angular-bind-vs-custom-vs-native
   function simpleBind(context, fn) {
@@ -14591,7 +14658,7 @@ function qFactory(nextTick, exceptionHandler) {
     this.notify = simpleBind(this, this.notify);
   }
 
-  Deferred.prototype = {
+  extend(Deferred.prototype, {
     resolve: function(val) {
       if (this.promise.$$state.status) return;
       if (val === this.promise) {
@@ -14654,7 +14721,7 @@ function qFactory(nextTick, exceptionHandler) {
         });
       }
     }
-  };
+  });
 
   /**
    * @ngdoc method
@@ -14737,6 +14804,9 @@ function qFactory(nextTick, exceptionHandler) {
    * the promise comes from a source that can't be trusted.
    *
    * @param {*} value Value or a promise
+   * @param {Function=} successCallback
+   * @param {Function=} errorCallback
+   * @param {Function=} progressCallback
    * @returns {Promise} Returns a promise of the passed value or promise
    */
 
@@ -14756,6 +14826,9 @@ function qFactory(nextTick, exceptionHandler) {
    * Alias of {@link ng.$q#when when} to maintain naming consistency with ES6.
    *
    * @param {*} value Value or a promise
+   * @param {Function=} successCallback
+   * @param {Function=} errorCallback
+   * @param {Function=} progressCallback
    * @returns {Promise} Returns a promise of the passed value or promise
    */
   var resolve = when;
@@ -14844,7 +14917,7 @@ function $$RAFProvider() { //rAF
                                $window.webkitCancelRequestAnimationFrame;
 
     var rafSupported = !!requestAnimationFrame;
-    var rafFn = rafSupported
+    var raf = rafSupported
       ? function(fn) {
           var id = requestAnimationFrame(fn);
           return function() {
@@ -14858,47 +14931,9 @@ function $$RAFProvider() { //rAF
           };
         };
 
-    queueFn.supported = rafSupported;
+    raf.supported = rafSupported;
 
-    var cancelLastRAF;
-    var taskCount = 0;
-    var taskQueue = [];
-    return queueFn;
-
-    function flush() {
-      for (var i = 0; i < taskQueue.length; i++) {
-        var task = taskQueue[i];
-        if (task) {
-          taskQueue[i] = null;
-          task();
-        }
-      }
-      taskCount = taskQueue.length = 0;
-    }
-
-    function queueFn(asyncFn) {
-      var index = taskQueue.length;
-
-      taskCount++;
-      taskQueue.push(asyncFn);
-
-      if (index === 0) {
-        cancelLastRAF = rafFn(flush);
-      }
-
-      return function cancelQueueFn() {
-        if (index >= 0) {
-          taskQueue[index] = null;
-          index = null;
-
-          if (--taskCount === 0 && cancelLastRAF) {
-            cancelLastRAF();
-            cancelLastRAF = null;
-            taskQueue.length = 0;
-          }
-        }
-      };
-    }
+    return raf;
   }];
 }
 
@@ -15011,12 +15046,9 @@ function $RootScopeProvider() {
      * A root scope can be retrieved using the {@link ng.$rootScope $rootScope} key from the
      * {@link auto.$injector $injector}. Child scopes are created using the
      * {@link ng.$rootScope.Scope#$new $new()} method. (Most scopes are created automatically when
-     * compiled HTML template is executed.)
+     * compiled HTML template is executed.) See also the {@link guide/scope Scopes guide} for
+     * an in-depth introduction and usage examples.
      *
-     * Here is a simple scope snippet to show how you can interact with the scope.
-     * ```html
-     * <file src="./test/ng/rootScopeSpec.js" tag="docs1" />
-     * ```
      *
      * # Inheritance
      * A scope can inherit from a parent scope, as in this example:
@@ -15178,9 +15210,9 @@ function $RootScopeProvider() {
        *
        *
        * If you want to be notified whenever {@link ng.$rootScope.Scope#$digest $digest} is called,
-       * you can register a `watchExpression` function with no `listener`. (Since `watchExpression`
-       * can execute multiple times per {@link ng.$rootScope.Scope#$digest $digest} cycle when a
-       * change is detected, be prepared for multiple calls to your listener.)
+       * you can register a `watchExpression` function with no `listener`. (Be prepared for
+       * multiple calls to your `watchExpression` because it will execute multiple times in a
+       * single {@link ng.$rootScope.Scope#$digest $digest} cycle if a change is detected.)
        *
        * After a watcher is registered with the scope, the `listener` fn is called asynchronously
        * (via {@link ng.$rootScope.Scope#$evalAsync $evalAsync}) to initialize the
@@ -15942,11 +15974,14 @@ function $RootScopeProvider() {
       $apply: function(expr) {
         try {
           beginPhase('$apply');
-          return this.$eval(expr);
+          try {
+            return this.$eval(expr);
+          } finally {
+            clearPhase();
+          }
         } catch (e) {
           $exceptionHandler(e);
         } finally {
-          clearPhase();
           try {
             $rootScope.$digest();
           } catch (e) {
@@ -16862,10 +16897,10 @@ function $SceDelegateProvider() {
  *    - There are exactly **two wildcard sequences** - `*` and `**`.  All other characters
  *      match themselves.
  *    - `*`: matches zero or more occurrences of any character other than one of the following 6
- *      characters: '`:`', '`/`', '`.`', '`?`', '`&`' and ';'.  It's a useful wildcard for use
+ *      characters: '`:`', '`/`', '`.`', '`?`', '`&`' and '`;`'.  It's a useful wildcard for use
  *      in a whitelist.
  *    - `**`: matches zero or more occurrences of *any* character.  As such, it's not
- *      not appropriate to use in for a scheme, domain, etc. as it would match too much.  (e.g.
+ *      appropriate for use in a scheme, domain, etc. as it would match too much.  (e.g.
  *      http://**.example.com/ would match http://evil.com/?ignore=.example.com/ and that might
  *      not have been the intention.)  Its usage at the very end of the path is ok.  (e.g.
  *      http://foo.example.com/templates/**).
@@ -16873,11 +16908,11 @@ function $SceDelegateProvider() {
  *    - *Caveat*:  While regular expressions are powerful and offer great flexibility,  their syntax
  *      (and all the inevitable escaping) makes them *harder to maintain*.  It's easy to
  *      accidentally introduce a bug when one updates a complex expression (imho, all regexes should
- *      have good test coverage.).  For instance, the use of `.` in the regex is correct only in a
+ *      have good test coverage).  For instance, the use of `.` in the regex is correct only in a
  *      small number of cases.  A `.` character in the regex used when matching the scheme or a
  *      subdomain could be matched against a `:` or literal `.` that was likely not intended.   It
  *      is highly recommended to use the string patterns and only fall back to regular expressions
- *      if they as a last resort.
+ *      as a last resort.
  *    - The regular expression must be an instance of RegExp (i.e. not a string.)  It is
  *      matched against the **entire** *normalized / absolute URL* of the resource being tested
  *      (even when the RegExp did not have the `^` and `$` codes.)  In addition, any flags
@@ -16887,7 +16922,7 @@ function $SceDelegateProvider() {
  *      remember to escape your regular expression (and be aware that you might need more than
  *      one level of escaping depending on your templating engine and the way you interpolated
  *      the value.)  Do make use of your platform's escaping mechanism as it might be good
- *      enough before coding your own.  e.g. Ruby has
+ *      enough before coding your own.  E.g. Ruby has
  *      [Regexp.escape(str)](http://www.ruby-doc.org/core-2.0.0/Regexp.html#method-c-escape)
  *      and Python has [re.escape](http://docs.python.org/library/re.html#re.escape).
  *      Javascript lacks a similar built in function for escaping.  Take a look at Google
@@ -17775,19 +17810,12 @@ var originUrl = urlResolve(window.location.href);
  *
  * Implementation Notes for IE
  * ---------------------------
- * IE >= 8 and <= 10 normalizes the URL when assigned to the anchor node similar to the other
+ * IE <= 10 normalizes the URL when assigned to the anchor node similar to the other
  * browsers.  However, the parsed components will not be set if the URL assigned did not specify
  * them.  (e.g. if you assign a.href = "foo", then a.protocol, a.host, etc. will be empty.)  We
  * work around that by performing the parsing in a 2nd step by taking a previously normalized
  * URL (e.g. by assigning to a.href) and assigning it a.href again.  This correctly populates the
  * properties such as protocol, hostname, port, etc.
- *
- * IE7 does not normalize the URL when assigned to an anchor node.  (Apparently, it does, if one
- * uses the inner HTML approach to assign the URL as part of an HTML snippet -
- * http://stackoverflow.com/a/472729)  However, setting img[src] does normalize the URL.
- * Unfortunately, setting img[src] to something like "javascript:foo" on IE throws an exception.
- * Since the primary usage for normalizing URLs is to sanitize such URLs, we can't use that
- * method and IE < 8 is unsupported.
  *
  * References:
  *   http://developer.mozilla.org/en-US/docs/Web/API/HTMLAnchorElement
@@ -18068,6 +18096,7 @@ function $FilterProvider($provide) {
    *    your filters, then you can use capitalization (`myappSubsectionFilterx`) or underscores
    *    (`myapp_subsection_filterx`).
    *    </div>
+    * @param {Function} factory If the first argument was a string, a factory function for the filter to be registered.
    * @returns {Object} Registered filter instance, or if a map of filters was provided then a map
    *    of the registered filter instances.
    */
@@ -18415,9 +18444,9 @@ function getTypeForFilter(val) {
          }
          element(by.model('amount')).clear();
          element(by.model('amount')).sendKeys('-1234');
-         expect(element(by.id('currency-default')).getText()).toBe('($1,234.00)');
-         expect(element(by.id('currency-custom')).getText()).toBe('(USD$1,234.00)');
-         expect(element(by.id('currency-no-fractions')).getText()).toBe('(USD$1,234)');
+         expect(element(by.id('currency-default')).getText()).toBe('-$1,234.00');
+         expect(element(by.id('currency-custom')).getText()).toBe('-USD$1,234.00');
+         expect(element(by.id('currency-no-fractions')).getText()).toBe('-USD$1,234');
        });
      </file>
    </example>
@@ -19257,6 +19286,10 @@ function orderByFilter($parse) {
     if (sortPredicate.length === 0) { sortPredicate = ['+']; }
 
     var predicates = processPredicates(sortPredicate, reverseOrder);
+    // Add a predicate at the end that evaluates to the element index. This makes the
+    // sort stable as it works as a tie-breaker when all the input predicates cannot
+    // distinguish between two elements.
+    predicates.push({ get: function() { return {}; }, descending: reverseOrder ? -1 : 1});
 
     // The next three lines are a version of a Swartzian Transform idiom from Perl
     // (sometimes called the Decorate-Sort-Undecorate idiom)
@@ -20257,7 +20290,6 @@ function FormController(element, attrs, $scope, $animate, $interpolate) {
        </script>
        <style>
         .my-form {
-          -webkit-transition:all linear 0.5s;
           transition:all linear 0.5s;
           background: transparent;
         }
@@ -20302,7 +20334,7 @@ function FormController(element, attrs, $scope, $animate, $interpolate) {
  *                       related scope, under this name.
  */
 var formDirectiveFactory = function(isNgForm) {
-  return ['$timeout', function($timeout) {
+  return ['$timeout', '$parse', function($timeout, $parse) {
     var formDirective = {
       name: 'form',
       restrict: isNgForm ? 'EAC' : 'E',
@@ -20344,21 +20376,21 @@ var formDirectiveFactory = function(isNgForm) {
             }
 
             var parentFormCtrl = controller.$$parentForm;
+            var setter = nameAttr ? getSetter(controller.$name) : noop;
 
             if (nameAttr) {
-              setter(scope, controller.$name, controller, controller.$name);
+              setter(scope, controller);
               attr.$observe(nameAttr, function(newValue) {
                 if (controller.$name === newValue) return;
-                setter(scope, controller.$name, undefined, controller.$name);
+                setter(scope, undefined);
                 parentFormCtrl.$$renameControl(controller, newValue);
-                setter(scope, controller.$name, controller, controller.$name);
+                setter = getSetter(controller.$name);
+                setter(scope, controller);
               });
             }
             formElement.on('$destroy', function() {
               parentFormCtrl.$removeControl(controller);
-              if (nameAttr) {
-                setter(scope, attr[nameAttr], undefined, controller.$name);
-              }
+              setter(scope, undefined);
               extend(controller, nullFormCtrl); //stop propagating child destruction handlers upwards
             });
           }
@@ -20367,6 +20399,14 @@ var formDirectiveFactory = function(isNgForm) {
     };
 
     return formDirective;
+
+    function getSetter(expression) {
+      if (expression === '') {
+        //create an assignable expression, so forms with an empty name can be renamed later
+        return $parse('this[""]').assign;
+      }
+      return $parse(expression).assign || noop;
+    }
   }];
 };
 
@@ -20379,7 +20419,7 @@ var ngFormDirective = formDirectiveFactory(true);
   DIRTY_CLASS: false,
   UNTOUCHED_CLASS: false,
   TOUCHED_CLASS: false,
-  $ngModelMinErr: false,
+  ngModelMinErr: false,
 */
 
 // Regex code is obtained from SO: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#answer-3143231
@@ -21501,7 +21541,11 @@ function baseInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   element.on('change', listener);
 
   ctrl.$render = function() {
-    element.val(ctrl.$isEmpty(ctrl.$viewValue) ? '' : ctrl.$viewValue);
+    // Workaround for Firefox validation #12102.
+    var value = ctrl.$isEmpty(ctrl.$viewValue) ? '' : ctrl.$viewValue;
+    if (element.val() !== value) {
+      element.val(value);
+    }
   };
 }
 
@@ -21612,7 +21656,7 @@ function createDateInputType(type, regexp, parseDate, format) {
 
     ctrl.$formatters.push(function(value) {
       if (value && !isDate(value)) {
-        throw $ngModelMinErr('datefmt', 'Expected `{0}` to be a date', value);
+        throw ngModelMinErr('datefmt', 'Expected `{0}` to be a date', value);
       }
       if (isValidDate(value)) {
         previousDate = value;
@@ -21688,7 +21732,7 @@ function numberInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   ctrl.$formatters.push(function(value) {
     if (!ctrl.$isEmpty(value)) {
       if (!isNumber(value)) {
-        throw $ngModelMinErr('numfmt', 'Expected `{0}` to be a number', value);
+        throw ngModelMinErr('numfmt', 'Expected `{0}` to be a number', value);
       }
       value = value.toString();
     }
@@ -21781,7 +21825,7 @@ function parseConstantExpr($parse, context, name, expression, fallback) {
   if (isDefined(expression)) {
     parseFn = $parse(expression);
     if (!parseFn.constant) {
-      throw minErr('ngModel')('constexpr', 'Expected constant expression for `{0}`, but saw ' +
+      throw ngModelMinErr('constexpr', 'Expected constant expression for `{0}`, but saw ' +
                                    '`{1}`.', name, expression);
     }
     return parseFn(context);
@@ -22634,7 +22678,6 @@ function classDirective(name, selector) {
      </file>
      <file name="style.css">
        .base-class {
-         -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
          transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
        }
 
@@ -23067,27 +23110,29 @@ var ngControllerDirective = [function() {
  *
  * @element html
  * @description
- * Enables [CSP (Content Security Policy)](https://developer.mozilla.org/en/Security/CSP) support.
+ *
+ * Angular has some features that can break certain
+ * [CSP (Content Security Policy)](https://developer.mozilla.org/en/Security/CSP) rules.
+ *
+ * If you intend to implement these rules then you must tell Angular not to use these features.
  *
  * This is necessary when developing things like Google Chrome Extensions or Universal Windows Apps.
  *
- * CSP forbids apps to use `eval` or `Function(string)` generated functions (among other things).
- * For Angular to be CSP compatible there are only two things that we need to do differently:
  *
- * - don't use `Function` constructor to generate optimized value getters
- * - don't inject custom stylesheet into the document
+ * The following rules affect Angular:
  *
- * AngularJS uses `Function(string)` generated functions as a speed optimization. Applying the `ngCsp`
- * directive will cause Angular to use CSP compatibility mode. When this mode is on AngularJS will
- * evaluate all expressions up to 30% slower than in non-CSP mode, but no security violations will
- * be raised.
+ * * `unsafe-eval`: this rule forbids apps to use `eval` or `Function(string)` generated functions
+ * (among other things). Angular makes use of this in the {@link $parse} service to provide a 30%
+ * increase in the speed of evaluating Angular expressions.
  *
- * CSP forbids JavaScript to inline stylesheet rules. In non CSP mode Angular automatically
- * includes some CSS rules (e.g. {@link ng.directive:ngCloak ngCloak}).
- * To make those directives work in CSP mode, include the `angular-csp.css` manually.
+ * * `unsafe-inline`: this rule forbids apps from inject custom styles into the document. Angular
+ * makes use of this to include some CSS rules (e.g. {@link ngCloak} and {@link ngHide}).
+ * To make these directives work when a CSP rule is blocking inline styles, you must link to the
+ * `angular-csp.css` in your HTML manually.
  *
- * Angular tries to autodetect if CSP is active and automatically turn on the CSP-safe mode. This
- * autodetection however triggers a CSP error to be logged in the console:
+ * If you do not provide `ngCsp` then Angular tries to autodetect if CSP is blocking unsafe-eval
+ * and automatically deactivates this feature in the {@link $parse} service. This autodetection,
+ * however, triggers a CSP error to be logged in the console:
  *
  * ```
  * Refused to evaluate a string as JavaScript because 'unsafe-eval' is not an allowed source of
@@ -23096,10 +23141,38 @@ var ngControllerDirective = [function() {
  * ```
  *
  * This error is harmless but annoying. To prevent the error from showing up, put the `ngCsp`
- * directive on the root element of the application or on the `angular.js` script tag, whichever
- * appears first in the html document.
+ * directive on an element of the HTML document that appears before the `<script>` tag that loads
+ * the `angular.js` file.
  *
  * *Note: This directive is only available in the `ng-csp` and `data-ng-csp` attribute form.*
+ *
+ * You can specify which of the CSP related Angular features should be deactivated by providing
+ * a value for the `ng-csp` attribute. The options are as follows:
+ *
+ * * no-inline-style: this stops Angular from injecting CSS styles into the DOM
+ *
+ * * no-unsafe-eval: this stops Angular from optimising $parse with unsafe eval of strings
+ *
+ * You can use these values in the following combinations:
+ *
+ *
+ * * No declaration means that Angular will assume that you can do inline styles, but it will do
+ * a runtime check for unsafe-eval. E.g. `<body>`. This is backwardly compatible with previous versions
+ * of Angular.
+ *
+ * * A simple `ng-csp` (or `data-ng-csp`) attribute will tell Angular to deactivate both inline
+ * styles and unsafe eval. E.g. `<body ng-csp>`. This is backwardly compatible with previous versions
+ * of Angular.
+ *
+ * * Specifying only `no-unsafe-eval` tells Angular that we must not use eval, but that we can inject
+ * inline styles. E.g. `<body ng-csp="no-unsafe-eval">`.
+ *
+ * * Specifying only `no-inline-style` tells Angular that we must not inject styles, but that we can
+ * run eval - no automcatic check for unsafe eval will occur. E.g. `<body ng-csp="no-inline-style">`
+ *
+ * * Specifying both `no-unsafe-eval` and `no-inline-style` tells Angular that we must not inject
+ * styles nor use eval, which is the same as an empty: ng-csp.
+ * E.g.`<body ng-csp="no-inline-style;no-unsafe-eval">`
  *
  * @example
  * This example shows how to apply the `ngCsp` directive to the `html` tag.
@@ -23232,7 +23305,7 @@ var ngControllerDirective = [function() {
 
 // ngCsp is not implemented as a proper directive any more, because we need it be processed while we
 // bootstrap the system (before $parse is instantiated), for this reason we just have
-// the csp.isActive() fn that looks for ng-csp attribute anywhere in the current doc
+// the csp() fn that looks for the `ng-csp` attribute anywhere in the current doc
 
 /**
  * @ngdoc directive
@@ -23779,7 +23852,6 @@ forEach(
       }
 
       .animate-if.ng-enter, .animate-if.ng-leave {
-        -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
         transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
       }
 
@@ -23928,7 +24000,6 @@ var ngIfDirective = ['$animate', function($animate) {
       }
 
       .slide-animate.ng-enter, .slide-animate.ng-leave {
-        -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
         transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
 
         position:absolute;
@@ -24348,8 +24419,7 @@ var VALID_CLASS = 'ng-valid',
     TOUCHED_CLASS = 'ng-touched',
     PENDING_CLASS = 'ng-pending';
 
-
-var $ngModelMinErr = new minErr('ngModel');
+var ngModelMinErr = minErr('ngModel');
 
 /**
  * @ngdoc type
@@ -24600,7 +24670,7 @@ var NgModelController = ['$scope', '$exceptionHandler', '$attrs', '$element', '$
         }
       };
     } else if (!parsedNgModel.assign) {
-      throw $ngModelMinErr('nonassign', "Expression '{0}' is non-assignable. Element: {1}",
+      throw ngModelMinErr('nonassign', "Expression '{0}' is non-assignable. Element: {1}",
           $attr.ngModel, startingTag($element));
     }
   };
@@ -24931,7 +25001,7 @@ var NgModelController = ['$scope', '$exceptionHandler', '$attrs', '$element', '$
       forEach(ctrl.$asyncValidators, function(validator, name) {
         var promise = validator(modelValue, viewValue);
         if (!isPromiseLike(promise)) {
-          throw $ngModelMinErr("$asyncValidators",
+          throw ngModelMinErr("$asyncValidators",
             "Expected asynchronous validator to return a promise but got '{0}' instead.", promise);
         }
         setValidity(name, undefined);
@@ -25268,7 +25338,6 @@ var NgModelController = ['$scope', '$exceptionHandler', '$attrs', '$element', '$
        </script>
        <style>
          .my-input {
-           -webkit-transition:all linear 0.5s;
            transition:all linear 0.5s;
            background: transparent;
          }
@@ -25785,7 +25854,7 @@ var ngOptionsMinErr = minErr('ngOptions');
  * Consider the following example:
  *
  * ```html
- * <select ng-options="item.subItem as item.label for item in values track by item.id" ng-model="selected">
+ * <select ng-options="item.subItem as item.label for item in values track by item.id" ng-model="selected"></select>
  * ```
  *
  * ```js
@@ -26247,7 +26316,7 @@ var ngOptionsDirective = ['$compile', '$parse', function($compile, $parse) {
 
           forEach(selectedValues, function(value) {
             var option = options.selectValueMap[value];
-            if (!option.disabled) selections.push(options.getViewValueFromOption(option));
+            if (option && !option.disabled) selections.push(options.getViewValueFromOption(option));
           });
 
           return selections;
@@ -26942,7 +27011,6 @@ var ngPluralizeDirective = ['$locale', '$interpolate', '$log', function($locale,
       .animate-repeat.ng-move,
       .animate-repeat.ng-enter,
       .animate-repeat.ng-leave {
-        -webkit-transition:all linear 0.5s;
         transition:all linear 0.5s;
       }
 
@@ -27339,9 +27407,7 @@ var NG_HIDE_IN_PROGRESS_CLASS = 'ng-hide-animate';
         background: white;
       }
 
-      .animate-show.ng-hide-add.ng-hide-add-active,
-      .animate-show.ng-hide-remove.ng-hide-remove-active {
-        -webkit-transition: all linear 0.5s;
+      .animate-show.ng-hide-add, .animate-show.ng-hide-remove {
         transition: all linear 0.5s;
       }
 
@@ -27498,7 +27564,6 @@ var ngShowDirective = ['$animate', function($animate) {
     </file>
     <file name="animations.css">
       .animate-hide {
-        -webkit-transition: all linear 0.5s;
         transition: all linear 0.5s;
         line-height: 20px;
         opacity: 1;
@@ -27697,7 +27762,6 @@ var ngStyleDirective = ngDirective(function(scope, element, attr) {
       }
 
       .animate-switch.ng-animate {
-        -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
         transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
 
         position:absolute;
@@ -28038,31 +28102,162 @@ var SelectController =
  * @description
  * HTML `SELECT` element with angular data-binding.
  *
- * In many cases, `ngRepeat` can be used on `<option>` elements instead of {@link ng.directive:ngOptions
- * ngOptions} to achieve a similar result. However, `ngOptions` provides some benefits such as reducing
- * memory and increasing speed by not creating a new scope for each repeated instance, as well as providing
- * more flexibility in how the `<select>`'s model is assigned via the `select` **`as`** part of the
- * comprehension expression.
+ * The `select` directive is used together with {@link ngModel `ngModel`} to provide data-binding
+ * between the scope and the `<select>` control (including setting default values).
+ * Ìt also handles dynamic `<option>` elements, which can be added using the {@link ngRepeat `ngRepeat}` or
+ * {@link ngOptions `ngOptions`} directives.
  *
- * When an item in the `<select>` menu is selected, the array element or object property
- * represented by the selected option will be bound to the model identified by the `ngModel`
- * directive.
+ * When an item in the `<select>` menu is selected, the value of the selected option will be bound
+ * to the model identified by the `ngModel` directive. With static or repeated options, this is
+ * the content of the `value` attribute or the textContent of the `<option>`, if the value attribute is missing.
+ * If you want dynamic value attributes, you can use interpolation inside the value attribute.
  *
- * If the viewValue contains a value that doesn't match any of the options then the control
- * will automatically add an "unknown" option, which it then removes when this is resolved.
+ * <div class="alert alert-warning">
+ * Note that the value of a `select` directive used without `ngOptions` is always a string.
+ * When the model needs to be bound to a non-string value, you must either explictly convert it
+ * using a directive (see example below) or use `ngOptions` to specify the set of options.
+ * This is because an option element can only be bound to string values at present.
+ * </div>
+ *
+ * If the viewValue of `ngModel` does not match any of the options, then the control
+ * will automatically add an "unknown" option, which it then removes when the mismatch is resolved.
  *
  * Optionally, a single hard-coded `<option>` element, with the value set to an empty string, can
  * be nested into the `<select>` element. This element will then represent the `null` or "not selected"
  * option. See example below for demonstration.
  *
  * <div class="alert alert-info">
- * The value of a `select` directive used without `ngOptions` is always a string.
- * When the model needs to be bound to a non-string value, you must either explictly convert it
- * using a directive (see example below) or use `ngOptions` to specify the set of options.
- * This is because an option element can only be bound to string values at present.
+ * In many cases, `ngRepeat` can be used on `<option>` elements instead of {@link ng.directive:ngOptions
+ * ngOptions} to achieve a similar result. However, `ngOptions` provides some benefits, such as
+ * more flexibility in how the `<select>`'s model is assigned via the `select` **`as`** part of the
+ * comprehension expression, and additionally in reducing memory and increasing speed by not creating
+ * a new scope for each repeated instance.
  * </div>
  *
- * ### Example (binding `select` to a non-string value)
+ *
+ * @param {string} ngModel Assignable angular expression to data-bind to.
+ * @param {string=} name Property name of the form under which the control is published.
+ * @param {string=} required Sets `required` validation error key if the value is not entered.
+ * @param {string=} ngRequired Adds required attribute and required validation constraint to
+ * the element when the ngRequired expression evaluates to true. Use ngRequired instead of required
+ * when you want to data-bind to the required attribute.
+ * @param {string=} ngChange Angular expression to be executed when selected option(s) changes due to user
+ *    interaction with the select element.
+ * @param {string=} ngOptions sets the options that the select is populated with and defines what is
+ * set on the model on selection. See {@link ngOptions `ngOptions`}.
+ *
+ * @example
+ * ### Simple `select` elements with static options
+ *
+ * <example name="static-select" module="staticSelect">
+ * <file name="index.html">
+ * <div ng-controller="ExampleController">
+ *   <form name="myForm">
+ *     <label for="singleSelect"> Single select: </label><br>
+ *     <select name="singleSelect" ng-model="data.singleSelect">
+ *       <option value="option-1">Option 1</option>
+ *       <option value="option-2">Option 2</option>
+ *     </select><br>
+ *
+ *     <label for="singleSelect"> Single select with "not selected" option and dynamic option values: </label><br>
+ *     <select name="singleSelect" ng-model="data.singleSelect">
+ *       <option value="">---Please select---</option> <!-- not selected / blank option -->
+ *       <option value="{{data.option1}}">Option 1</option> <!-- interpolation -->
+ *       <option value="option-2">Option 2</option>
+ *     </select><br>
+ *     <button ng-click="forceUnknownOption()">Force unknown option</button><br>
+ *     <tt>singleSelect = {{data.singleSelect}}</tt>
+ *
+ *     <hr>
+ *     <label for="multipleSelect"> Multiple select: </label><br>
+ *     <select name="multipleSelect" id="multipleSelect" ng-model="data.multipleSelect" multiple>
+ *       <option value="option-1">Option 1</option>
+ *       <option value="option-2">Option 2</option>
+ *       <option value="option-3">Option 3</option>
+ *     </select><br>
+ *     <tt>multipleSelect = {{data.multipleSelect}}</tt><br/>
+ *   </form>
+ * </div>
+ * </file>
+ * <file name="app.js">
+ *  angular.module('staticSelect', [])
+ *    .controller('ExampleController', ['$scope', function($scope) {
+ *      $scope.data = {
+ *       singleSelect: null,
+ *       multipleSelect: [],
+ *       option1: 'option-1',
+ *      };
+ *
+ *      $scope.forceUnknownOption = function() {
+ *        $scope.data.singleSelect = 'nonsense';
+ *      };
+ *   }]);
+ * </file>
+ *</example>
+ *
+ * ### Using `ngRepeat` to generate `select` options
+ * <example name="ngrepeat-select" module="ngrepeatSelect">
+ * <file name="index.html">
+ * <div ng-controller="ExampleController">
+ *   <form name="myForm">
+ *     <label for="repeatSelect"> Repeat select: </label>
+ *     <select name="repeatSelect" ng-model="data.repeatSelect">
+ *       <option ng-repeat="option in data.availableOptions" value="{{option.id}}">{{option.name}}</option>
+ *     </select>
+ *   </form>
+ *   <hr>
+ *   <tt>repeatSelect = {{data.repeatSelect}}</tt><br/>
+ * </div>
+ * </file>
+ * <file name="app.js">
+ *  angular.module('ngrepeatSelect', [])
+ *    .controller('ExampleController', ['$scope', function($scope) {
+ *      $scope.data = {
+ *       singleSelect: null,
+ *       availableOptions: [
+ *         {id: '1', name: 'Option A'},
+ *         {id: '2', name: 'Option B'},
+ *         {id: '3', name: 'Option C'}
+ *       ],
+ *      };
+ *   }]);
+ * </file>
+ *</example>
+ *
+ *
+ * ### Using `select` with `ngOptions` and setting a default value
+ * See the {@link ngOptions ngOptions documentation} for more `ngOptions` usage examples.
+ *
+ * <example name="select-with-default-values" module="defaultValueSelect">
+ * <file name="index.html">
+ * <div ng-controller="ExampleController">
+ *   <form name="myForm">
+ *     <label for="mySelect">Make a choice:</label>
+ *     <select name="mySelect" id="mySelect"
+ *       ng-options="option.name for option in data.availableOptions track by option.id"
+ *       ng-model="data.selectedOption"></select>
+ *   </form>
+ *   <hr>
+ *   <tt>option = {{data.selectedOption}}</tt><br/>
+ * </div>
+ * </file>
+ * <file name="app.js">
+ *  angular.module('defaultValueSelect', [])
+ *    .controller('ExampleController', ['$scope', function($scope) {
+ *      $scope.data = {
+ *       availableOptions: [
+ *         {id: '1', name: 'Option A'},
+ *         {id: '2', name: 'Option B'},
+ *         {id: '3', name: 'Option C'}
+ *       ],
+ *       selectedOption: {id: '3', name: 'Option C'} //This sets the default value of the select in the ui
+ *       };
+ *   }]);
+ * </file>
+ *</example>
+ *
+ *
+ * ### Binding `select` to a non-string value via `ngModel` parsing / formatting
  *
  * <example name="select-with-non-string-options" module="nonStringSelect">
  *   <file name="index.html">
@@ -28296,8 +28491,9 @@ var patternDirective = function() {
         ctrl.$validate();
       });
 
-      ctrl.$validators.pattern = function(value) {
-        return ctrl.$isEmpty(value) || isUndefined(regexp) || regexp.test(value);
+      ctrl.$validators.pattern = function(modelValue, viewValue) {
+        // HTML5 pattern constraint validates the input value, so we validate the viewValue
+        return ctrl.$isEmpty(viewValue) || isUndefined(regexp) || regexp.test(viewValue);
       };
     }
   };
@@ -28343,17 +28539,145 @@ var minlengthDirective = function() {
   };
 };
 
-  if (window.angular.bootstrap) {
-    //AngularJS is already loaded, so we can return here...
-    console.log('WARNING: Tried to load angular more than once.');
-    return;
+if (window.angular.bootstrap) {
+  //AngularJS is already loaded, so we can return here...
+  console.log('WARNING: Tried to load angular more than once.');
+  return;
+}
+
+//try to bind to jquery now so that one can write jqLite(document).ready()
+//but we will rebind on bootstrap again.
+bindJQuery();
+
+publishExternalAPI(angular);
+
+angular.module("ngLocale", [], ["$provide", function($provide) {
+var PLURAL_CATEGORY = {ZERO: "zero", ONE: "one", TWO: "two", FEW: "few", MANY: "many", OTHER: "other"};
+function getDecimals(n) {
+  n = n + '';
+  var i = n.indexOf('.');
+  return (i == -1) ? 0 : n.length - i - 1;
+}
+
+function getVF(n, opt_precision) {
+  var v = opt_precision;
+
+  if (undefined === v) {
+    v = Math.min(getDecimals(n), 3);
   }
 
-  //try to bind to jquery now so that one can write jqLite(document).ready()
-  //but we will rebind on bootstrap again.
-  bindJQuery();
+  var base = Math.pow(10, v);
+  var f = ((n * base) | 0) % base;
+  return {v: v, f: f};
+}
 
-  publishExternalAPI(angular);
+$provide.value("$locale", {
+  "DATETIME_FORMATS": {
+    "AMPMS": [
+      "AM",
+      "PM"
+    ],
+    "DAY": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "ERANAMES": [
+      "Before Christ",
+      "Anno Domini"
+    ],
+    "ERAS": [
+      "BC",
+      "AD"
+    ],
+    "FIRSTDAYOFWEEK": 6,
+    "MONTH": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "SHORTDAY": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ],
+    "SHORTMONTH": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "WEEKENDRANGE": [
+      5,
+      6
+    ],
+    "fullDate": "EEEE, MMMM d, y",
+    "longDate": "MMMM d, y",
+    "medium": "MMM d, y h:mm:ss a",
+    "mediumDate": "MMM d, y",
+    "mediumTime": "h:mm:ss a",
+    "short": "M/d/yy h:mm a",
+    "shortDate": "M/d/yy",
+    "shortTime": "h:mm a"
+  },
+  "NUMBER_FORMATS": {
+    "CURRENCY_SYM": "$",
+    "DECIMAL_SEP": ".",
+    "GROUP_SEP": ",",
+    "PATTERNS": [
+      {
+        "gSize": 3,
+        "lgSize": 3,
+        "maxFrac": 3,
+        "minFrac": 0,
+        "minInt": 1,
+        "negPre": "-",
+        "negSuf": "",
+        "posPre": "",
+        "posSuf": ""
+      },
+      {
+        "gSize": 3,
+        "lgSize": 3,
+        "maxFrac": 2,
+        "minFrac": 2,
+        "minInt": 1,
+        "negPre": "-\u00a4",
+        "negSuf": "",
+        "posPre": "\u00a4",
+        "posSuf": ""
+      }
+    ]
+  },
+  "id": "en-us",
+  "pluralCat": function(n, opt_precision) {  var i = n | 0;  var vf = getVF(n, opt_precision);  if (i == 1 && vf.v == 0) {    return PLURAL_CATEGORY.ONE;  }  return PLURAL_CATEGORY.OTHER;}
+});
+}]);
 
   jqLite(document).ready(function() {
     angularInit(document, bootstrap);
@@ -28361,10 +28685,10 @@ var minlengthDirective = function() {
 
 })(window, document);
 
-!window.angular.$$csp() && window.angular.element(document.head).prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\\:form{display:block;}.ng-animate-shim{visibility:hidden;}.ng-anchor{position:absolute;}</style>');
+!window.angular.$$csp().noInlineStyle && window.angular.element(document.head).prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\\:form{display:block;}.ng-animate-shim{visibility:hidden;}.ng-anchor{position:absolute;}</style>');
 /**
  * @license
- * lodash 3.10.0 (Custom Build) <https://lodash.com/>
+ * lodash 3.10.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern -o ./lodash.js`
  * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
@@ -28377,7 +28701,7 @@ var minlengthDirective = function() {
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '3.10.0';
+  var VERSION = '3.10.1';
 
   /** Used to compose bitmasks for wrapper metadata. */
   var BIND_FLAG = 1,
@@ -28959,7 +29283,7 @@ var minlengthDirective = function() {
    * @private
    * @param {Array} array The array to inspect.
    * @param {Function} [iteratee] The function invoked per iteration.
-   * @returns {Array} Returns the new duplicate-value-free array.
+   * @returns {Array} Returns the new duplicate free array.
    */
   function sortedUniq(array, iteratee) {
     var seen,
@@ -29438,7 +29762,7 @@ var minlengthDirective = function() {
           takeCount = nativeMin(length, this.__takeCount__);
 
       if (!isArr || arrLength < LARGE_ARRAY_SIZE || (arrLength == length && takeCount == length)) {
-        return baseWrapperValue((isRight && isArr) ? array.reverse() : array, this.__actions__);
+        return baseWrapperValue(array, this.__actions__);
       }
       var result = [];
 
@@ -30155,7 +30479,7 @@ var minlengthDirective = function() {
       }
       var index = -1,
           indexOf = getIndexOf(),
-          isCommon = indexOf == baseIndexOf,
+          isCommon = indexOf === baseIndexOf,
           cache = (isCommon && values.length >= LARGE_ARRAY_SIZE) ? createCache(values) : null,
           valuesLength = values.length;
 
@@ -31022,13 +31346,13 @@ var minlengthDirective = function() {
      * @private
      * @param {Array} array The array to inspect.
      * @param {Function} [iteratee] The function invoked per iteration.
-     * @returns {Array} Returns the new duplicate-value-free array.
+     * @returns {Array} Returns the new duplicate free array.
      */
     function baseUniq(array, iteratee) {
       var index = -1,
           indexOf = getIndexOf(),
           length = array.length,
-          isCommon = indexOf == baseIndexOf,
+          isCommon = indexOf === baseIndexOf,
           isLarge = isCommon && length >= LARGE_ARRAY_SIZE,
           seen = isLarge ? createCache() : null,
           result = [];
@@ -32237,7 +32561,7 @@ var minlengthDirective = function() {
      * @returns {string} Returns the function name.
      */
     function getFuncName(func) {
-      var result = func.name,
+      var result = (func.name + ''),
           array = realNames[result],
           length = array ? array.length : 0;
 
@@ -32504,11 +32828,12 @@ var minlengthDirective = function() {
      * @returns {boolean} Returns `true` if `func` has a lazy counterpart, else `false`.
      */
     function isLaziable(func) {
-      var funcName = getFuncName(func);
-      if (!(funcName in LazyWrapper.prototype)) {
+      var funcName = getFuncName(func),
+          other = lodash[funcName];
+
+      if (typeof other != 'function' || !(funcName in LazyWrapper.prototype)) {
         return false;
       }
-      var other = lodash[funcName];
       if (func === other) {
         return true;
       }
@@ -33243,7 +33568,7 @@ var minlengthDirective = function() {
 
     /**
      * Flattens a nested array. If `isDeep` is `true` the array is recursively
-     * flattened, otherwise it is only flattened a single level.
+     * flattened, otherwise it's only flattened a single level.
      *
      * @static
      * @memberOf _
@@ -33290,7 +33615,7 @@ var minlengthDirective = function() {
     /**
      * Gets the index at which the first occurrence of `value` is found in `array`
      * using [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
-     * for equality comparisons. If `fromIndex` is negative, it is used as the offset
+     * for equality comparisons. If `fromIndex` is negative, it's used as the offset
      * from the end of `array`. If `array` is sorted providing `true` for `fromIndex`
      * performs a faster binary search.
      *
@@ -33369,7 +33694,7 @@ var minlengthDirective = function() {
           othIndex = othLength,
           caches = Array(length),
           indexOf = getIndexOf(),
-          isCommon = indexOf == baseIndexOf,
+          isCommon = indexOf === baseIndexOf,
           result = [];
 
       while (othIndex--) {
@@ -33654,7 +33979,7 @@ var minlengthDirective = function() {
     /**
      * Uses a binary search to determine the lowest index at which `value` should
      * be inserted into `array` in order to maintain its sort order. If an iteratee
-     * function is provided it is invoked for `value` and each element of `array`
+     * function is provided it's invoked for `value` and each element of `array`
      * to compute their sort ranking. The iteratee is bound to `thisArg` and
      * invoked with one argument; (value).
      *
@@ -33928,7 +34253,7 @@ var minlengthDirective = function() {
      * [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
      * for equality comparisons, in which only the first occurence of each element
      * is kept. Providing `true` for `isSorted` performs a faster search algorithm
-     * for sorted arrays. If an iteratee function is provided it is invoked for
+     * for sorted arrays. If an iteratee function is provided it's invoked for
      * each element in the array to generate the criterion by which uniqueness
      * is computed. The `iteratee` is bound to `thisArg` and invoked with three
      * arguments: (value, index, array).
@@ -33986,7 +34311,7 @@ var minlengthDirective = function() {
       if (!(iteratee == null && callback === baseCallback)) {
         iteratee = callback(iteratee, thisArg, 3);
       }
-      return (isSorted && getIndexOf() == baseIndexOf)
+      return (isSorted && getIndexOf() === baseIndexOf)
         ? sortedUniq(array, iteratee)
         : baseUniq(array, iteratee);
     }
@@ -34441,7 +34766,7 @@ var minlengthDirective = function() {
       var value = this.__wrapped__;
 
       var interceptor = function(value) {
-        return (wrapped && wrapped.__dir__ < 0) ? value : value.reverse();
+        return value.reverse();
       };
       if (value instanceof LazyWrapper) {
         var wrapped = value;
@@ -34883,9 +35208,9 @@ var minlengthDirective = function() {
     });
 
     /**
-     * Checks if `value` is in `collection` using
+     * Checks if `target` is in `collection` using
      * [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
-     * for equality comparisons. If `fromIndex` is negative, it is used as the offset
+     * for equality comparisons. If `fromIndex` is negative, it's used as the offset
      * from the end of `collection`.
      *
      * @static
@@ -34980,7 +35305,7 @@ var minlengthDirective = function() {
     /**
      * Invokes the method at `path` of each element in `collection`, returning
      * an array of the results of each invoked method. Any additional arguments
-     * are provided to each invoked method. If `methodName` is a function it is
+     * are provided to each invoked method. If `methodName` is a function it's
      * invoked for, and `this` bound to, each element in `collection`.
      *
      * @static
@@ -35632,7 +35957,7 @@ var minlengthDirective = function() {
 
     /**
      * The opposite of `_.before`; this method creates a function that invokes
-     * `func` once it is called `n` or more times.
+     * `func` once it's called `n` or more times.
      *
      * @static
      * @memberOf _
@@ -35697,7 +36022,7 @@ var minlengthDirective = function() {
 
     /**
      * Creates a function that invokes `func`, with the `this` binding and arguments
-     * of the created function, while it is called less than `n` times. Subsequent
+     * of the created function, while it's called less than `n` times. Subsequent
      * calls to the created function return the result of the last `func` invocation.
      *
      * @static
@@ -35977,7 +36302,7 @@ var minlengthDirective = function() {
      * @param {boolean} [options.leading=false] Specify invoking on the leading
      *  edge of the timeout.
      * @param {number} [options.maxWait] The maximum time `func` is allowed to be
-     *  delayed before it is invoked.
+     *  delayed before it's invoked.
      * @param {boolean} [options.trailing=true] Specify invoking on the trailing
      *  edge of the timeout.
      * @returns {Function} Returns the new debounced function.
@@ -36125,7 +36450,7 @@ var minlengthDirective = function() {
 
     /**
      * Defers invoking the `func` until the current call stack has cleared. Any
-     * additional arguments are provided to `func` when it is invoked.
+     * additional arguments are provided to `func` when it's invoked.
      *
      * @static
      * @memberOf _
@@ -36146,7 +36471,7 @@ var minlengthDirective = function() {
 
     /**
      * Invokes `func` after `wait` milliseconds. Any additional arguments are
-     * provided to `func` when it is invoked.
+     * provided to `func` when it's invoked.
      *
      * @static
      * @memberOf _
@@ -36479,7 +36804,7 @@ var minlengthDirective = function() {
      * Creates a function that invokes `func` with the `this` binding of the
      * created function and arguments from `start` and beyond provided as an array.
      *
-     * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
+     * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/Web/JavaScript/Reference/Functions/rest_parameters).
      *
      * @static
      * @memberOf _
@@ -36530,7 +36855,7 @@ var minlengthDirective = function() {
      * Creates a function that invokes `func` with the `this` binding of the created
      * function and an array of arguments much like [`Function#apply`](https://es5.github.io/#x15.3.4.3).
      *
-     * **Note:** This method is based on the [spread operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_operator).
+     * **Note:** This method is based on the [spread operator](https://developer.mozilla.org/Web/JavaScript/Reference/Operators/Spread_operator).
      *
      * @static
      * @memberOf _
@@ -36651,10 +36976,10 @@ var minlengthDirective = function() {
 
     /**
      * Creates a clone of `value`. If `isDeep` is `true` nested objects are cloned,
-     * otherwise they are assigned by reference. If `customizer` is provided it is
+     * otherwise they are assigned by reference. If `customizer` is provided it's
      * invoked to produce the cloned values. If `customizer` returns `undefined`
      * cloning is handled by the method instead. The `customizer` is bound to
-     * `thisArg` and invoked with two argument; (value [, index|key, object]).
+     * `thisArg` and invoked with up to three argument; (value [, index|key, object]).
      *
      * **Note:** This method is loosely based on the
      * [structured clone algorithm](http://www.w3.org/TR/html5/infrastructure.html#internal-structured-cloning-algorithm).
@@ -36710,15 +37035,15 @@ var minlengthDirective = function() {
         isDeep = false;
       }
       return typeof customizer == 'function'
-        ? baseClone(value, isDeep, bindCallback(customizer, thisArg, 1))
+        ? baseClone(value, isDeep, bindCallback(customizer, thisArg, 3))
         : baseClone(value, isDeep);
     }
 
     /**
-     * Creates a deep clone of `value`. If `customizer` is provided it is invoked
+     * Creates a deep clone of `value`. If `customizer` is provided it's invoked
      * to produce the cloned values. If `customizer` returns `undefined` cloning
      * is handled by the method instead. The `customizer` is bound to `thisArg`
-     * and invoked with two argument; (value [, index|key, object]).
+     * and invoked with up to three argument; (value [, index|key, object]).
      *
      * **Note:** This method is loosely based on the
      * [structured clone algorithm](http://www.w3.org/TR/html5/infrastructure.html#internal-structured-cloning-algorithm).
@@ -36761,7 +37086,7 @@ var minlengthDirective = function() {
      */
     function cloneDeep(value, customizer, thisArg) {
       return typeof customizer == 'function'
-        ? baseClone(value, true, bindCallback(customizer, thisArg, 1))
+        ? baseClone(value, true, bindCallback(customizer, thisArg, 3))
         : baseClone(value, true);
     }
 
@@ -36915,7 +37240,7 @@ var minlengthDirective = function() {
     }
 
     /**
-     * Checks if `value` is empty. A value is considered empty unless it is an
+     * Checks if `value` is empty. A value is considered empty unless it's an
      * `arguments` object, array, string, or jQuery-like collection with a length
      * greater than `0` or an object with own enumerable properties.
      *
@@ -36954,10 +37279,10 @@ var minlengthDirective = function() {
 
     /**
      * Performs a deep comparison between two values to determine if they are
-     * equivalent. If `customizer` is provided it is invoked to compare values.
+     * equivalent. If `customizer` is provided it's invoked to compare values.
      * If `customizer` returns `undefined` comparisons are handled by the method
-     * instead. The `customizer` is bound to `thisArg` and invoked with three
-     * arguments: (value, other [, index|key]).
+     * instead. The `customizer` is bound to `thisArg` and invoked with up to
+     * three arguments: (value, other [, index|key]).
      *
      * **Note:** This method supports comparing arrays, booleans, `Date` objects,
      * numbers, `Object` objects, regexes, and strings. Objects are compared by
@@ -37073,7 +37398,7 @@ var minlengthDirective = function() {
     function isFunction(value) {
       // The use of `Object#toString` avoids issues with the `typeof` operator
       // in older versions of Chrome and Safari which return 'function' for regexes
-      // and Safari 8 equivalents which return 'object' for typed array constructors.
+      // and Safari 8 which returns 'object' for typed array constructors.
       return isObject(value) && objToString.call(value) == funcTag;
     }
 
@@ -37107,7 +37432,7 @@ var minlengthDirective = function() {
     /**
      * Performs a deep comparison between `object` and `source` to determine if
      * `object` contains equivalent property values. If `customizer` is provided
-     * it is invoked to compare values. If `customizer` returns `undefined`
+     * it's invoked to compare values. If `customizer` returns `undefined`
      * comparisons are handled by the method instead. The `customizer` is bound
      * to `thisArg` and invoked with three arguments: (value, other, index|key).
      *
@@ -37489,7 +37814,7 @@ var minlengthDirective = function() {
      * Recursively merges own enumerable properties of the source object(s), that
      * don't resolve to `undefined` into the destination object. Subsequent sources
      * overwrite property assignments of previous sources. If `customizer` is
-     * provided it is invoked to produce the merged values of the destination and
+     * provided it's invoked to produce the merged values of the destination and
      * source properties. If `customizer` returns `undefined` merging is handled
      * by the method instead. The `customizer` is bound to `thisArg` and invoked
      * with five arguments: (objectValue, sourceValue, key, object, source).
@@ -37538,7 +37863,7 @@ var minlengthDirective = function() {
     /**
      * Assigns own enumerable properties of source object(s) to the destination
      * object. Subsequent sources overwrite property assignments of previous sources.
-     * If `customizer` is provided it is invoked to produce the assigned values.
+     * If `customizer` is provided it's invoked to produce the assigned values.
      * The `customizer` is bound to `thisArg` and invoked with five arguments:
      * (objectValue, sourceValue, key, object, source).
      *
@@ -37911,7 +38236,7 @@ var minlengthDirective = function() {
      * // => 'default'
      */
     function get(object, path, defaultValue) {
-      var result = object == null ? undefined : baseGet(object, toPath(path), path + '');
+      var result = object == null ? undefined : baseGet(object, toPath(path), (path + ''));
       return result === undefined ? defaultValue : result;
     }
 
@@ -38226,7 +38551,7 @@ var minlengthDirective = function() {
     /**
      * Creates an object composed of the picked `object` properties. Property
      * names may be specified as individual arguments or as arrays of property
-     * names. If `predicate` is provided it is invoked for each property of `object`
+     * names. If `predicate` is provided it's invoked for each property of `object`
      * picking the properties `predicate` returns truthy for. The predicate is
      * bound to `thisArg` and invoked with three arguments: (value, key, object).
      *
@@ -38260,7 +38585,7 @@ var minlengthDirective = function() {
 
     /**
      * This method is like `_.get` except that if the resolved value is a function
-     * it is invoked with the `this` binding of its parent object and its result
+     * it's invoked with the `this` binding of its parent object and its result
      * is returned.
      *
      * @static
@@ -38301,7 +38626,7 @@ var minlengthDirective = function() {
 
     /**
      * Sets the property value of `path` on `object`. If a portion of `path`
-     * does not exist it is created.
+     * does not exist it's created.
      *
      * @static
      * @memberOf _
@@ -38459,7 +38784,7 @@ var minlengthDirective = function() {
 
     /**
      * Checks if `n` is between `start` and up to but not including, `end`. If
-     * `end` is not specified it is set to `start` with `start` then set to `0`.
+     * `end` is not specified it's set to `start` with `start` then set to `0`.
      *
      * @static
      * @memberOf _
@@ -39423,7 +39748,7 @@ var minlengthDirective = function() {
 
     /**
      * Attempts to invoke `func`, returning either the result or the caught error
-     * object. Any additional arguments are provided to `func` when it is invoked.
+     * object. Any additional arguments are provided to `func` when it's invoked.
      *
      * @static
      * @memberOf _
@@ -39821,13 +40146,13 @@ var minlengthDirective = function() {
      */
     function propertyOf(object) {
       return function(path) {
-        return baseGet(object, toPath(path), path + '');
+        return baseGet(object, toPath(path), (path + ''));
       };
     }
 
     /**
      * Creates an array of numbers (positive and/or negative) progressing from
-     * `start` up to, but not including, `end`. If `end` is not specified it is
+     * `start` up to, but not including, `end`. If `end` is not specified it's
      * set to `start` with `start` then set to `0`. If `end` is less than `start`
      * a zero-length range is created unless a negative `step` is specified.
      *
@@ -40020,7 +40345,7 @@ var minlengthDirective = function() {
 
     /**
      * Gets the maximum value of `collection`. If `collection` is empty or falsey
-     * `-Infinity` is returned. If an iteratee function is provided it is invoked
+     * `-Infinity` is returned. If an iteratee function is provided it's invoked
      * for each value in `collection` to generate the criterion by which the value
      * is ranked. The `iteratee` is bound to `thisArg` and invoked with three
      * arguments: (value, index, collection).
@@ -40069,7 +40394,7 @@ var minlengthDirective = function() {
 
     /**
      * Gets the minimum value of `collection`. If `collection` is empty or falsey
-     * `Infinity` is returned. If an iteratee function is provided it is invoked
+     * `Infinity` is returned. If an iteratee function is provided it's invoked
      * for each value in `collection` to generate the criterion by which the value
      * is ranked. The `iteratee` is bound to `thisArg` and invoked with three
      * arguments: (value, index, collection).
@@ -40646,7 +40971,7 @@ var minlengthDirective = function() {
     baseForOwn(LazyWrapper.prototype, function(func, methodName) {
       var lodashFunc = lodash[methodName];
       if (lodashFunc) {
-        var key = lodashFunc.name,
+        var key = (lodashFunc.name + ''),
             names = realNames[key] || (realNames[key] = []);
 
         names.push({ 'name': methodName, 'func': lodashFunc });
@@ -42070,6 +42395,59 @@ restangular.provider('Restangular', function() {
 
 })();
 
+/**
+ * Copyright (C) 2012 by Matias Niemela
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+angular.module('Scope.safeApply', []).run(function($rootScope) {
+
+  $rootScope.$safeApply = function() {
+    var $scope, fn, force = false;
+    if(arguments.length == 1) {
+      var arg = arguments[0];
+      if(typeof arg == 'function') {
+        fn = arg;
+      }
+      else {
+        $scope = arg;
+      }
+    }
+    else {
+      $scope = arguments[0];
+      fn = arguments[1];
+      if(arguments.length == 3) {
+        force = !!arguments[2];
+      }
+    }
+    $scope = $scope || this;
+    fn = fn || function() { };
+    if(force || !$scope.$$phase) {
+      $scope.$apply ? $scope.$apply(fn) : $scope.apply(fn);
+    }
+    else {
+      fn();
+    }
+  };
+
+});
+
 "use strict";
 
 /*\
@@ -42739,3 +43117,1216 @@ StringView.prototype.valueOf = StringView.prototype.toString = function () {
   return sView;
 
 };
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman.
+ * License: MIT
+ *
+ * Usage:
+ *   This is modeled after the Angular builtin's $http and $resource modules
+ *   Injection of this service into your controller, etc. exposes the
+ *   ngForce object, and it's methods to your controller. These methods expose
+ *   access via promise-based asyncronous Visualforce Remoting, and the Rest Api
+ *
+ * This module requires Three external modules:
+ *  1. safeApply: This handles wrapping calls to salesforce into the angular
+ *    event loop
+ *  2. Restangular: a library for handling rest based http calls.
+ *  3. LoDash: a utility belt of useful functions for javascript.
+ *
+ */
+angular.module('ngForce', [
+  'Scope.safeApply',
+  'restangular',
+  'multipart',
+  'ngForce.config'
+]);
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman & Alex Berg
+ * License: MIT
+ * 
+ * We are using Restangular, which uses the following functions to encode URI.
+ * This was copy-pasted directly from Restangular, in the `Path` object,
+ * which is used in the `urlCreatorFactory`.
+ *
+ * We lift this from Restangular for use with the sfrBackend module.
+ * 
+ */
+angular.module('ngForce').factory('encodeUriQuery', function () {
+  function sortedKeys(obj) {
+    var keys = [];
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        keys.push(key);
+      }
+    }
+    return keys.sort();
+  }
+  function forEachSorted(obj, iterator, context) {
+    var keys = sortedKeys(obj);
+    for (var i = 0; i < keys.length; i++) {
+      iterator.call(context, obj[keys[i]], keys[i]);
+    }
+    return keys;
+  }
+  function encodeUriQuery(val, pctEncodeSpaces) {
+    return encodeURIComponent(val).replace(/%40/gi, '@').replace(/%3A/gi, ':').replace(/%24/g, '$').replace(/%2C/gi, ',').replace(/%20/g, pctEncodeSpaces ? '%20' : '+');
+  }
+  return encodeUriQuery;
+});
+/*
+ * Introducing 'multipart'
+ * -----------------------
+ *
+ * A module that helps build a multipart HTTP request body consisting of
+ * binary and/or non-binary parts.
+ *
+ * The resulting body can be returned as an ArrayBuffer via req.getBuffer(),
+ * or as a string via req.toString().
+ *
+ * Usage:
+ *  var req = new MultipartRequest('my_boundary');
+ *
+ *  var part1 = new RequestPart();
+ *  part1.addHeader('My-Header', 'some value');
+ *  part1.addHeader('My-Other-Header', 'some other value');
+ *  part1.setBody({ Title: "My Title" });
+ *  req.addPart(part1);
+ *
+ *  var part2 = new RequestPart();
+ *  part2.addHeader('Content-Type', 'application/octet-stream');
+ *  part2.setBody(<ARRAY_BUFFER>);
+ *  req.addPart(part2);
+ *
+ *  var buffer = req.getBuffer();
+ *
+ * @author  https://github.com/lukemcfarlane
+ * @date    July 2014
+ */
+angular.module('multipart', []);
+
+/**
+ * Build a part of a MultipartRequest that can contain any number of headers
+ * and a body. The body can be either of the following types:
+ *  - ArrayBuffer (binary data)
+ *  - Object (JSON data)
+ *  - String
+ *
+ * The resulting request part can be returned either as an ArrayBuffer (getBuffer()), or
+ * as a string (toString());
+ */
+angular.module('multipart').service('RequestPart', function() {
+    function RequestPart() {
+        this.headers = [];
+    }
+
+    RequestPart.prototype.setBody = function(body) {
+        this.body = body;
+        switch (toString.call(body)) {
+            case '[object ArrayBuffer]':
+                this.bodyType = 'arraybuffer';
+                break;
+            case '[object String]':
+                this.bodyType = 'string';
+                break;
+            case '[object Object]':
+                this.bodyType = 'json';
+                break;
+            default:
+                throw Error('Unsupported multipart body type: ' + toString.call(body));
+        }
+    };
+
+    RequestPart.prototype.addHeader = function(name, value) {
+        this.headers.push({
+            name: name,
+            value: value
+        });
+    };
+
+    RequestPart.prototype.getRawHeaders = function() {
+        var rawHeadersArr = [];
+        for (var i = 0; i < this.headers.length; i++) {
+            var h = this.headers[i];
+            rawHeadersArr.push(h.name + ': ' + h.value);
+        }
+        return rawHeadersArr.join('\n');
+    };
+
+    RequestPart.prototype.getBuffer = function() {
+        var bufferArr = [];
+        var rawHeaders = this.getRawHeaders();
+        bufferArr.push((new StringView(rawHeaders)).buffer);
+        bufferArr.push((new StringView('\n\n')).buffer);
+        if (this.bodyType === 'arraybuffer') {
+            bufferArr.push(this.body);
+        } else if (this.bodyType === 'string') {
+            bufferArr.push((new StringView(this.body)).buffer);
+        } else if (this.bodyType === 'json') {
+            var jsonStr = JSON.stringify(this.body);
+            bufferArr.push((new StringView(jsonStr)).buffer);
+        }
+        return joinBuffers(bufferArr);
+    };
+
+    RequestPart.prototype.toString = function() {
+        return (new StringView(this.getBuffer())).toString();
+    };
+
+    function joinBuffers(arrayBuffers) {
+        var lengthSum = 0;
+        for (var i = 0; i < arrayBuffers.length; i++) {
+            lengthSum += arrayBuffers[i].byteLength;
+        }
+
+        var joined = new Uint8Array(lengthSum);
+
+        var offset = 0;
+        for (var i = 0; i < arrayBuffers.length; i++) {
+            var ab = arrayBuffers[i];
+            joined.set(new Uint8Array(ab), offset);
+            offset += ab.byteLength;
+        }
+
+        return joined.buffer;
+    }
+
+    return RequestPart;
+});
+
+/**
+ * Build a multipart request that consists of one or more request parts.
+ *
+ * The resulting multipart request body can be returned either as an
+ * ArrayBuffer (getBuffer()), or as a string (toString());
+ */
+angular.module('multipart').service('MultipartRequest', ['RequestPart',
+    function(RequestPart) {
+        function MultipartRequest(boundaryStr) {
+            this.boundaryStr = boundaryStr;
+            this.parts = [];
+        }
+
+        MultipartRequest.prototype.addPart = function(part) {
+            this.parts.push(part);
+        };
+
+        MultipartRequest.prototype.getBuffer = function() {
+            var bufferArr = [];
+            bufferArr.push((new StringView('--' + this.boundaryStr + '\n')).buffer);
+            for (var i = 0; i < this.parts.length; i++) {
+                bufferArr.push(this.parts[i].getBuffer());
+                bufferArr.push((new StringView('\n\n')).buffer);
+                if (i !== this.parts.length - 1) { // if not the last part
+                    bufferArr.push((new StringView('--' + this.boundaryStr + '\n')).buffer);
+                }
+            }
+            bufferArr.push((new StringView('--' + this.boundaryStr + '--')).buffer);
+            return joinBuffers(bufferArr);
+        };
+
+        MultipartRequest.prototype.toString = function() {
+            return (new StringView(this.getBuffer())).toString();
+        };
+
+        function joinBuffers(arrayBuffers) {
+            var lengthSum = 0;
+            for (var i = 0; i < arrayBuffers.length; i++) {
+                lengthSum += arrayBuffers[i].byteLength;
+            }
+
+            var joined = new Uint8Array(lengthSum);
+
+            var offset = 0;
+            for (var i = 0; i < arrayBuffers.length; i++) {
+                var ab = arrayBuffers[i];
+                joined.set(new Uint8Array(ab), offset);
+                offset += ab.byteLength;
+            }
+
+            return joined.buffer;
+        }
+
+        return MultipartRequest;
+    }
+]);
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman.
+ * License: MIT
+ *
+ * remoteObjects provides access to Visualforce Remote Objects
+ * api made available in api version 29.0
+ *
+ * Special thanks to Matt Welch @_MattWelch_ for giving me the idea
+ * for this, and for prototyping an example in vanilla js found here
+ * https://github.com/mattwelch/makeDeferredProvider/blob/master/makeDeferredProvider.js
+ * And for being generally awesome.
+ *
+ */
+angular.module('ngForce')
+	.provider('remoteObjects',
+		function() {
+			// default namespace
+			var namespace = "SObjectModel";
+			// app.config setter for the namespace.
+			this.setNamespace = function(newNamespace) {
+				if (!_.isUndefined(newNamespace)) {
+					namespace = newNamespace;
+				}
+			};
+			this.$get = function($q, $log) {
+				var remoteObjects = {
+					getPromiseObj: function(obj) {
+						var promisedObj = {};
+						promisedObj.remoteObj = new namespace[obj]();
+
+						promisedObj.retrieve = function(options) {
+							promisedObj.remoteObj.retrieve(opts, this.handleWithPromise);
+						};
+
+						promisedObj.create = function(fvs) {
+							fvs = fvs ? fvs : promisedObj.remoteObj._props;
+							promisedObj.remoteObj.create(fvs, handleWithPromise);
+						};
+
+						promisedObj.update = function(ids, fvs) {
+							if (!angular._isArray(ids)) {
+								fvs = ids;
+								ids = null;
+							}
+
+							ids = ids ? ids : [promisedObj.remoteObj._props.Id];
+							fvs = fvs ? fvs : promisedObj.remoteObj._props;
+
+							promisedObj.remoteObj.update(ids, fvs, handleWithPromise);
+						};
+
+						promisedObj.del = function(ids) {
+							ids = ids ? ids : [promisedObj.remoteObj._props.Id];
+							promisedObj.remoteObj.del(ids, handleWithPromise);
+						};
+
+						handleWithPromise = function(err, records, e) {
+							var deferred = $q.defer();
+							if (err) {
+								deferred.reject(err);
+							} else {
+								if (e) {
+									deferred.resolve(records, e);
+								} else {
+									deferred.resolve(records);
+								}
+							}
+							return deferred.promise;
+						};
+
+						return promisedObj;
+					}
+				};
+
+				return remoteObjects;
+			};
+		}
+);
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman.
+ * License: MIT
+ *
+ * Sfr provides access to the various REST based api's that 
+ * Salesforce offers. This is most-useful when utilizing an 
+ * angular on Visualforce page when the data volume starts
+ * making vfr impractical.
+ *
+ * sfr exposes four methods:
+ *   1. Model: this method returns a restangular object configured
+ *   for crud operations via the standard .post .get etc. methods 
+ *   of restanglar. 
+ *   2. Insert: A convience method, for ... inserting records.
+ *   3. Update: A convience method, for ... updating records.
+ *   4. Delete: a convience method, for ... deleting records.
+ * 
+ */
+angular.module('ngForce').factory('sfr', [
+  '$q',
+  '$rootScope',
+  'Restangular',
+  '$log',
+  function ($q, $rootScope, Restangular, $log, ngForceConfig) {
+    var sobjectEndpoints = [];
+    // sObjectName => restangularObject
+    var recordEndpoints = [];
+    // recordId => restangularObject
+    var sfRest = {
+        model: function (modelName, recordId) {
+          var baseResource = Restangular.setDefaultHeaders({ 'Authorization': 'Bearer ' + ngForceConfig.sessionId }).setBaseUrl('/services/data/v29.0/sobjects/').setRestangularFields({
+              id: 'Id',
+              selfLink: 'attributes.url'
+            });
+          var resource;
+          if (recordId)
+            // ../sobjects/{modelName}/{recordId}
+            resource = baseResource.one(modelName, recordId);
+          else
+            // ../sobjects/{modelName}
+            resource = baseResource.all(modelName);
+          return resource;
+        },
+        insert: function (sObjectName, recordToInsert, getLatest) {
+          var $defer = $q.defer();
+          // Guard against inputs.
+          if (!angular.isString(sObjectName)) {
+            $defer.reject('An sObject name is required to perform insert.');
+            return $defer.promise;
+          }
+          var _getLatest = angular.isDefined(getLatest) ? getLatest : false;
+          // Default to getLatest
+          // Find the right REST endpoint for the sObject.
+          var sObjectEndpoint = sobjectEndpoints[sObjectName];
+          if (angular.isUndefined(sObjectEndpoint)) {
+            sObjectEndpoint = this.model(sObjectName);
+            sobjectEndpoints[sObjectName] = sObjectEndpoint;
+          }
+          // Insert the new record.
+          return sObjectEndpoint.post(recordToInsert).then(function (response) {
+            if (response.success) {
+              $log.debug('ngForce: Created new ' + sObjectName + ' record:', response);
+              $defer.resolve(response);
+              if (!_getLatest) {
+                return $defer.promise;
+              }
+              // Get the new record's fields.
+              return sObjectEndpoint.get(response.id).then(function (newRecord) {
+                $log.debug('ngForce: Inserted:', newRecord);
+                return newRecord;
+              });
+            } else {
+              $defer.reject('Insert failed: [' + response.errors + '] Full response: ' + response);
+            }
+            return $defer.promise;
+          });
+        },
+        update: function (sObjectName, recordToUpdate, getLatest) {
+          var $defer = $q.defer();
+          // Guard against inputs.
+          if (!angular.isString(sObjectName)) {
+            $defer.reject('An sObject name is required to perform an update.');
+            return $defer.promise;
+          }
+          var _getLatest = angular.isDefined(getLatest) ? getLatest : false;
+          // Default to getLatest
+          var recordId = recordToUpdate.id || recordToUpdate.Id;
+          if (!angular.isString(recordId)) {
+            $defer.reject('An "Id" field is required to perform an update.');
+            return $defer.promise;
+          }
+          // Find the right REST endpoint for the sObject.
+          // Get the endpoint for the record.
+          var recordEndpoint = recordEndpoints[recordId];
+          if (angular.isUndefined(recordEndpoint)) {
+            recordEndpoint = this.model(sObjectName, recordId);
+            recordEndpoints[recordId] = recordEndpoint;
+          }
+          // Remove fields we can't update.
+          var propsToIgnore = [
+              'Id',
+              'LastReferencedDate',
+              'LastModifiedById',
+              'LastModifiedDate',
+              'LastViewedDate',
+              'SystemModstamp',
+              'CreatedById',
+              'CreatedDate',
+              'IsDeleted'
+            ];
+          for (var i = 0; i < propsToIgnore.length; i++) {
+            var p = propsToIgnore[i];
+            delete recordToUpdate[p];
+          }
+          // Update the record.
+          return recordEndpoint.patch(recordToUpdate).then(function (response) {
+            $log.debug('ngForce: Patched ' + sObjectName + ' record:', recordToUpdate);
+            if (!_getLatest) {
+              $defer.resolve('Patch successful!');
+              return $defer.promise;
+            }
+            // Get the new record's fields.
+            return recordEndpoint.get().then(function (newRecord) {
+              $log.debug('ngForce: Updated ' + sObjectName + ' record:', response);
+              return newRecord;
+            });
+          });
+        },
+        delete: function (sObjectName, recordToDelete) {
+          var $defer = $q.defer();
+          // Guard against inputs.
+          if (!angular.isString(sObjectName)) {
+            $defer.reject('An sObject name is required to perform a delete.');
+            return $defer.promise;
+          }
+          var recordId = recordToDelete.id || recordToDelete.Id;
+          if (!angular.isString(recordId)) {
+            $defer.reject('An "Id" field is required to perform a delete.');
+            return $defer.promise;
+          }
+          // Find the right REST endpoint for the sObject.
+          // Get the endpoint for the record.
+          var recordEndpoint = recordEndpoints[recordId];
+          if (angular.isUndefined(recordEndpoint)) {
+            recordEndpoint = this.model(sObjectName, recordId);
+            recordEndpoints[recordId] = recordEndpoint;
+          }
+          // Delete the record.
+          return recordEndpoint.remove().then(function (response, err) {
+            $log.debug('ngForce: Deleted ' + sObjectName + ' record:', recordId);
+            $defer.resolve('Delete successful!');
+            return $defer.promise;
+          });
+        }
+      };
+    return sfRest;
+  }
+]);
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman & Alex Berg
+ * License: MIT
+ *
+ * This is the least developed ngForce module.
+ * It provides access to reports.
+ * 
+ */
+
+/* global angular */
+'use strict';
+
+angular.module('ngForce').factory('sfranalytics', [
+  '$q',
+  '$rootScope',
+  'Restangular',
+  function ($q, $rootScope, Restangular, ngForceConfig) {
+
+    // private functions and variables
+    var _baseUrl = '/services/data/v29.0/analytics/';
+    var _additionalHeaders = {
+      'Authorization': 'Bearer ' + ngForceConfig.sessionId
+    };
+
+    var _analytics = Restangular.withConfig(function (RestangularConfigurer) {
+        RestangularConfigurer.setBaseUrl(_baseUrl);
+        RestangularConfigurer.setDefaultHeaders(_additionalHeaders);
+      }).setRestangularFields({ id: 'Id' });
+
+
+    // public methods and variables
+    return {
+      
+      /* return the raw Restangular object pointing to /reports */
+      analytics: function() {
+        return _analytics.all('reports');
+      },
+
+      /* scope the reports API to sfranalytics.reports */
+      reports: {
+
+        /* Returns report metadata given an ID */
+        metadata: function(reportId) {
+
+          return _analytics.one('reports', reportId).get('metadata');
+
+        },
+
+        /* 
+         * Runs a report with the given ID
+         * the config object contains filtering arguments, boolean async,
+         * and boolean includeDetails
+        */
+        run: function(reportId, config) {
+
+          // make sure we have a config object to work with
+          if ( typeof config !== 'object' ) { config = {}; }
+
+          // no async support right now
+          if ( config.async === true ) {
+            throw 'Asnynchronous report runs are not supported at this time';
+          }
+
+          // set any query params for the report url
+          var queryParams = {};
+          if ( config.includeDetails === true || config.includeDetails === false ) {
+            queryParams.includeDetails = config.includeDetails;
+          }
+
+          // check to see if we're doing on demand filtering
+          var ondemandFiltering = ( config.reportFilters && config.reportFilters.length > 0 );
+
+          if ( ondemandFiltering === true ) {
+
+            // in the case of ondemandFiltering we need to make a call beforehand to
+            // get the initial reportMetadata object so we're going to need setup our 
+            // own promise with $q.defer() (is this right???).
+            var deferred = $q.defer();
+
+            // retrieve the reportMetadata object from the overall report metadata, we're going to
+            // insert the filters in the config object and then post reportMetadata back to the reports API
+            this.metadata(reportId).then(function(response) {
+
+              var metadata = response.reportMetadata;
+
+              if ( typeof config.reportBooleanFilter === 'string' || config.reportBooleanFilter === null ) {
+                // overwrite the existing reportBooleanFilter with what's in the config object
+                metadata.reportBooleanFilter = config.reportBooleanFilter;
+              }
+
+              // (checking to see if a variable is an array is funky)
+              if ( Object.prototype.toString.call( config.reportFilters ) === '[object Array]' ) {
+                // overwrite the existing reportFilters with what's in the config object
+                metadata.reportFilters = config.reportFilters;
+              }
+
+              // post the filtering critiera and any query params, use our deferred object to proxy
+              // back the response or error
+              _analytics.one('reports').post(reportId, { reportMetadata: metadata }, queryParams).then(function(response) {
+                deferred.resolve(response);
+              }, function(errorResponse) {
+                deferred.reject(errorResponse);
+              });
+
+            });
+            
+            return deferred.promise;
+
+          } else {
+
+            // no ondemand filtering, just run the report with any query params
+            return _analytics.one('reports', reportId).get(queryParams);
+          
+          }
+
+        }        
+
+      },
+
+      /* 
+       * scope the dashboard API to sfranalytics.dashboard
+      */
+      dashboard: {
+        /* dashboard API methods go here */
+      }
+
+    
+    };
+    
+  }
+]);
+/*
+ * ngForce - an Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman & Alex Berg
+ * License: MIT
+ * 
+ * 
+ */
+angular.module('ngForce').factory('sfrBackend', [
+  '$q',
+  '$rootScope',
+  '$log',
+  '$httpBackend',
+  'encodeUriQuery',
+  function ($q, $rootScope, $log, $httpBackend, encodeUriQuery) {
+    // Note: This function is identical to the one in the `sfTemplate` service.
+    var escapeRegexp = function (s) {
+      return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    };
+    var sfrBackend = {
+        whenGetPage: function (pageName, responsePage) {
+          var _pageName = pageName;
+          // Ensure pageName is prefixed with "/page/"
+          if (_pageName.indexOf('/apex/') == -1) {
+            _pageName = '/apex/' + _pageName;
+          }
+          var escapedPageName = escapeRegexp(_pageName);
+          $httpBackend.whenGET(new RegExp(escapedPageName, 'i')).respond(responsePage);
+        },
+        whenQuery: function (sObjectName, resRecords, soqlClauses) {
+          // Guards
+          // We want arrays, but will handle receiving single items.
+          var _soqlClauses = angular.isString(soqlClauses) ? [soqlClauses] : soqlClauses;
+          var _resRecords = !angular.isArray(resRecords) ? [resRecords] : resRecords;
+          var encodedSoqlRegex = 'query.*FROM\\++' + sObjectName;
+          if (typeof _soqlClauses != 'undefined' && _soqlClauses !== null) {
+            // Encode clauses using the same encoding as Restangular, which we use.
+            var encodedSoqlClauses = _.chain(_soqlClauses).map(function (value, key) {
+                return encodeUriQuery(value);
+              }).foldl(function (memo, value) {
+                return memo += value;
+              }).value();
+            // The URI encoding uses RegExp characters, such as `+` and `(`. Escape them.
+            encodedSoqlRegex += '\\++WHERE.*' + escapeRegexp(encodedSoqlClauses);
+          }
+          $httpBackend.whenGET(new RegExp(encodedSoqlRegex, 'i')).respond(200, {
+            'totalSize': _resRecords.length,
+            'done': true,
+            'records': _resRecords
+          });
+        },
+        expectQuery: function (sObjectName, resRecords, soqlClauses) {
+          // Guards
+          // We want arrays, but will handle receiving single items.
+          var _soqlClauses = angular.isString(soqlClauses) ? [soqlClauses] : soqlClauses;
+          var _resRecords = !angular.isArray(resRecords) ? [resRecords] : resRecords;
+          var encodedSoqlRegex = 'query.*FROM\\++' + sObjectName;
+          if (typeof _soqlClauses != 'undefined' && _soqlClauses !== null) {
+            // Encode clauses using the same encoding as Restangular, which we use.
+            var encodedSoqlClauses = _.chain(_soqlClauses).map(function (value, key) {
+                return encodeUriQuery(value);
+              }).foldl(function (memo, value) {
+                return memo += value;
+              }).value();
+            // The URI encoding uses RegExp characters, such as `+` and `(`. Escape them.
+            encodedSoqlRegex += '\\++WHERE.*' + escapeRegexp(encodedSoqlClauses);
+          }
+          $httpBackend.expectGET(new RegExp(encodedSoqlRegex, 'i')).respond(200, {
+            'totalSize': _resRecords.length,
+            'done': true,
+            'records': _resRecords
+          });
+        },
+        expectInsert: function (sObjectName, resRecords, getLatest) {
+          // We want arrays, but will handle receiving single items.
+          var _resRecords = !angular.isArray(resRecords) ? [resRecords] : resRecords;
+          var _getLatest = getLatest || true;
+          // Default to getLatest
+          angular.forEach(_resRecords, function (resRecord, key) {
+            $httpBackend.expectPOST(new RegExp(sObjectName, 'i')).respond(201, {
+              'id': resRecord.Id,
+              'success': true,
+              'errors': []
+            });
+            if (!_getLatest) {
+              $httpBackend.expectGET(new RegExp(sObjectName + '/' + resRecord.Id, 'i')).respond(200, resRecord);
+            }
+          });
+        },
+        expectDelete: function (sObjectName, recordIds) {
+          // We want arrays, but will handle receiving single items or nothing.
+          recordIds = recordIds || '';
+          var _recordIds = !angular.isArray(recordIds) ? [recordIds] : recordIds;
+          angular.forEach(_recordIds, function (recordId) {
+            $httpBackend.expectDELETE(new RegExp(sObjectName + '/' + recordId, 'i')).respond(201, {});
+          });
+        }
+      };
+    return sfrBackend;
+  }
+]);
+/**
+ * The sfrfile service allows binary data to be uploaded via the Salesforce REST API.
+ *
+ * Please see the following documentation for more information:
+ * http://www.salesforce.com/us/developer/docs/api_rest/Content/dome_sobject_insert_update_blob.htm
+ */
+angular.module('ngForce').factory('sfrfile', function($q, $rootScope, $log, Restangular, MultipartRequest, RequestPart, ngForceConfig) {
+    var sfrfile = Restangular.withConfig(function(RestangularConfigurer) {
+        RestangularConfigurer.setDefaultHttpFields({
+            cache: false,
+            transformRequest: function(data) {
+                return data;
+            }
+        });
+        RestangularConfigurer.setBaseUrl('/services/data/v29.0/sobjects');
+        RestangularConfigurer.setDefaultHeaders({
+            'Authorization': 'Bearer ' + ngForceConfig.sessionId
+        });
+    }).setRestangularFields({
+        id: "Id",
+        selfLink: 'attributes.url'
+    });
+
+    /**
+     * Insert an SObject with binary data.
+     *
+     * @param  sObjectName  'Document', 'Attachment', or 'ContentVersion'
+     * @param  sObjectData  Object containing sObject fields and values
+     * @param  filename     File name string
+     * @param  fileBuffer   ArrayBuffer to be included in binary part of request
+     */
+    sfrfile.insert = function(sObjectName, sObjectData, filename, fileBuffer) {
+        SObjectType = {
+            'Document': {
+                jsonPartName: 'entity_document',
+                binaryPartName: 'Body'
+            },
+            'Attachment': {
+                jsonPartName: 'entity_attachment',
+                binaryPartName: 'Body'
+            },
+            'ContentVersion': {
+                jsonPartName: 'entity_content',
+                binaryPartName: 'VersionData'
+            }
+        };
+
+        var mySObjectType = SObjectType[sObjectName];
+        if (typeof mySObjectType === undefined) {
+            throw new Error('Upload not supported for SObject type \'' + sObjectName + '\'');
+        }
+
+        var binaryNameAttr;
+        var boundaryStr = 'boundary_string';
+        var req = new MultipartRequest(boundaryStr);
+
+        var sobjectDataPart = new RequestPart();
+        sobjectDataPart.addHeader('Content-Disposition', 'form-data; name="' + mySObjectType.jsonPartName + '";');
+        sobjectDataPart.addHeader('Content-Type', 'application/json');
+        sobjectDataPart.setBody(sObjectData);
+        req.addPart(sobjectDataPart);
+
+        var filePart = new RequestPart();
+        filePart.addHeader('Content-Type', 'application/octet-stream');
+        filePart.addHeader('Content-Disposition', 'form-data; name="' + mySObjectType.binaryPartName + '"; filename="' + filename + '"');
+        filePart.setBody(fileBuffer);
+        req.addPart(filePart);
+
+        var bufferView = (new Uint8Array(req.getBuffer()));
+
+        return sfrfile
+            .all(sObjectName)
+            .post(
+                bufferView,
+                null, {
+                    'Content-Type': 'multipart/form-data; boundary="' + boundaryStr + '"'
+                })
+            .then(function(response) {
+                return response;
+            });
+    };
+    return sfrfile;
+});
+
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman.
+ * License: MIT
+ *
+ * SfQuery is the main query interface for gathering Salesforce data.
+ * Since Salesforce's rest API is only "restful" it has it's own
+ * dedicated query endpoint rather than query endpoints for each
+ * object.
+ */
+angular.module('ngForce').factory('sfrquery', [
+	'$q',
+	'$rootScope',
+	'$log',
+	'Restangular',
+	'encodeUriQuery',
+	'ngForceConfig',
+	function($q, $rootScope, $log, Restangular, encodeUriQuery, ngForceConfig) {
+		// Custom configure the restangular setup for this
+		var sfrquery = Restangular.withConfig(function(RestangularConfigurer) {
+			//These get passed through to the standard Angular $http 
+			RestangularConfigurer.setDefaultHttpFields({
+				cache: false
+			});
+			// Establish our base url.
+			RestangularConfigurer.setBaseUrl('/services/data/v30.0/');
+			// and set our authorization header.
+			RestangularConfigurer.setDefaultHeaders({
+				'Authorization': 'Bearer ' + ngForceConfig.sessionId
+			}); // With the SF "query" endpoint, it may not return the whole set
+			//   of requested records. In this case, it will send one page of
+			//   records, the total number of records, and a URL we can use to
+			//   get the remaining pages of records.
+			// Therefore, we can not use an extractor, as it will not let us
+			//   access the "totalSize" and "nextRecordsUrl" attributes, but
+			//   only give us the contents of the "records" attributes.
+			// RestangularConfigurer.setResponseExtractor(function(response) {
+			// return response.records;
+			// });
+		}).setRestangularFields({
+			id: 'Id',
+			selfLink: 'attributes.url'
+		}).oneUrl('query', '/services/data/v30.0/query');
+		/**
+		 * Make a rest query to Salesforce
+		 * @param  {String} query        Query String -- fully qualified SOQL string.
+		 * @param  {Boolean} cacheEnabled Should we cache the response?
+		 * @return {Array}              Array of records.
+		 */
+		sfrquery.query = function(query, cacheEnabled) {
+			cacheEnabled = typeof cacheEnabled !== 'undefined' ? cacheEnabled : false;
+			return sfrquery.withHttpConfig({
+				cache: cacheEnabled
+			}).get({
+				q: query
+			}).then(function(response) {
+				return response.records;
+			});
+		};
+		/**
+		 * queryAll recursively calls through a series of salesforce Rest calls to retrieve
+		 * all the rows resulting from an initial query.
+		 * @param  {String} queryStringOrQueryLocator Either the query string -- on initial call, or the query locator
+		 * @param  {Boolean} cacheEnabled             True - we use cache, false - no cache for you.
+		 * @param  {Deferred} deferred                Deferred object - null on initial call
+		 * @param  {Array} results                    Array of rows returned by all completed calls. Null on inital call
+		 * @return {Promise}                          Returns a Promise!
+		 */
+		sfrquery.queryAll = function(queryStringOrQueryLocator, cacheEnabled, deferred, results) {
+			// Setup the 3 optional params - Default to true for caching
+			if (angular.isUndefined(cacheEnabled)) {
+				cacheEnabled = true;
+			}
+			// On initial call, this recursive function will not be called with a results array, create it.
+			if (angular.isUndefined(results)) {
+				results = [];
+			}
+			// On the initial call, this recursive function will not have a deferred object, create it here.
+			if (angular.isUndefined(deferred)) {
+				deferred = $q.defer();
+			}
+			// On initial call, this method will have a query string, not a query locator. 
+			// In those situations, we need to pre-pend "?q=" to the querystring. 
+			// We determine whether or not to do this, by inspecting the first six characters
+			// We *expect* that "Select" is the first word of a queryAll query string.
+			if (queryStringOrQueryLocator.trim().substring(0, 6).toLowerCase() === 'select') {
+				queryStringOrQueryLocator = '?q=' + encodeUriQuery(queryStringOrQueryLocator);
+			}
+			// Here starts the functional body of the method.
+			sfrquery.withHttpConfig({
+				cache: cacheEnabled
+			}).customGET(queryStringOrQueryLocator).then(function(data) {
+				// Add to the results array. Don't try sorting or unique.
+				results = results.concat(data.records);
+				// Inspect the returned data, looking to see if we're "done" i.e.: we've recieved all the pages
+				// of data. 
+				if (!data.done) {
+					// If we're not done, recursively call this method with the query locator returned by the previous call.
+					// Making sure to pass on our cache parameters, our deferred object and the results array.
+					sfrquery.queryAll(_.last(data.nextRecordsUrl.split('/')), cacheEnabled, deferred, results);
+				} else {
+					// if we are done, resolve the deferred object.
+					deferred.resolve(results);
+					return deferred.promise;
+				}
+			}, function(error) {
+				// any errors are handled here.
+				return deferred.reject(error);
+			});
+			// this deferred.notify call allows us in theory to update the ui with a "we've made 5 out of 7 calls" type message.
+			deferred.notify();
+			// regardless, return a promise!
+			return deferred.promise;
+		};
+		return sfrquery;
+	}
+]);
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman.
+ * License: MIT
+ *
+ *
+ * Salesforce injects scripts into all Visualforce pages.
+ *   e.g.:
+ *   /faces/a4j/g/3_3_3.Finalorg.ajax4jsf.javascript.AjaxScript?rel=1392581006000
+ *   /static/111213/js/perf/stub.js
+ * Because we can't disable this, we strip them out before rendering them.
+ *   If we don't, the browser will take ~250ms to fetch them before
+ *   the template is rendered.
+ *
+ */
+angular.module('ngForce')
+	.provider('sfTemplate',
+		function() {
+			// Add substrings which are unique to the script tags you wish to block.
+			// Note: Regex support would be nice. The problem is that JS files have `.`
+			//   as part of the file path, which is symbol reserved by Regex.
+			// 
+			// Script tags in the retrieved file that match these symbols will be
+			// stripped from the template.
+			var scriptSymbolBlacklist = [
+				'.ajax4jsf.javascript.AjaxScript',
+				'/js/perf/stub.js',
+				'/sfdc/JiffyStubs.js'
+			];
+			/**
+			 * an app.js config block enabled function for custom setting
+			 * the blacklist of scripts to be removed
+			 * @param {Array} newBlacklist Array of symbols to be blacklisted.
+			 */
+			this.setScriptSymbolBlacklist = function(newBlacklist) {
+				if (angular.isArray(newBlacklist) && newBlacklist.length > 0) {
+					scriptSymbolBlacklist = newBlacklist;
+				} else {
+					throw new Error('newBlacklist must be an array!');
+				}
+			};
+			this.$get = function($q, $http, $templateCache, $log) {
+				/**
+				 * escape Regex special characters in the input string.
+				 * @param  {[type]} s [description]
+				 * @return {[type]}   [description]
+				 */
+				var escapeRegexp = function(s) {
+					return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+				};
+				/**
+				 * generates a regex with the blacklisted tokens
+				 * @param  {Array} scriptNames Blacklist
+				 * @return {Regex}             Regex expression.
+				 */
+				var buildScriptRegex = function(scriptNames) {
+					// Script names may use RexExp-reserved characters. Escape them.
+					var scriptNamesEscaped = _.map(scriptNames, escapeRegexp);
+					// Wrap in ".*" to match any part of script name.
+					var scriptNamePatterns = _.map(scriptNamesEscaped, function(s) {
+						return '.*' + s + '.*?';
+					});
+					// Change scripts to Regex pattern options syntax.
+					//   e.g. [a, b] -> "(a|b)"
+					var scriptNameOptions = '(' + scriptNamePatterns.join('|') + ')';
+					var scriptTagPattern = '<script src="' + scriptNameOptions + '"></script>';
+					var scriptTagRegex = new RegExp(scriptTagPattern, 'gi');
+					return scriptTagRegex;
+				};
+				/**
+				 * Strip out script tags from template
+				 * @param  {String} htmlTemplate html string of template to have script tags parsed out.
+				 * @return {String}              Html Template
+				 */
+				var stripScriptTags = function(htmlTemplate) {
+					var badScriptRegex = buildScriptRegex(scriptSymbolBlacklist);
+					var cleanedHtmlTemplate = htmlTemplate.replace(badScriptRegex, '');
+					// $log.debug('ngForce: Cleaned template:', cleanedHtmlTemplate);
+					return cleanedHtmlTemplate;
+				};
+				// The sfTemplate module is responsible for getting
+				// useable HTML templates from Salesforce.
+				/**
+				 * Object is the functional part of this module
+				 * it accepts a url, and returns a $templatCache'd template
+				 * that's been stripped of extraneous scripts
+				 * @type {Object}
+				 */
+				var sfTemplate = {
+					fromVf: function(url) {
+						var pTemplate = $http.get(url, {
+							cache: $templateCache
+						}).then(function(response) {
+							// $log.debug('ngForce: Fetched VF template:', response);
+							return response.data;
+						}).then(stripScriptTags);
+						return pTemplate;
+					}
+				};
+				return sfTemplate;
+			};
+		}
+);
+/*
+ * ngForce - a visualForce remoting based Angular.js service for developing
+ * Angular apps within Visualforce.
+ *
+ * Copyright (c)2013, Kevin Pooorman.
+ * License: MIT
+ *
+ * Vfr provides access to visualforce Remoting methods from any given class
+ * in the Org that are @remoteAction annotated.
+ *
+ * While ngForce comes with a standard set of crud based operations based on
+ * TKForce by @metadaddy, developers should pay specific attention to
+ * the .send() method, which enables bootstraping any class.method so long
+ * as it's a legit js Remoting action.
+ *
+ */
+angular.module('ngForce')
+	.provider('vfr', function() {
+		/**
+		 * Object contains the two standard fields needed by the .send method: escape and timeout.
+		 * escape: Should the result be escape. default to false.
+		 * timeout: set the timeout for visualforce to respond.
+		 * @type {Object}
+		 */
+		var standardOpts = {
+			escape: false,
+			timeout: 10000
+		};
+
+		// Force shutdown the VFR provider / factory if VisualForce is not already an object on window.
+		if (typeof Visualforce != 'object') {
+			throw new Error('Visualforce is not available as an object! Did you forget to include the ngForce component?');
+		}
+		var vfRemote = {};
+
+		return {
+			setStandardOptions: function(newOptions) {
+				if (newOptions && typeof newOptions !== 'object') {
+					throw new Error('standardOptions must be an object');
+				}
+				standardOpts = newOptions;
+			},
+			$get: function($q, $rootScope) {
+				/*
+				 * Kevin o'Hara released premote, a nice lib for wrapping
+				 * visualforce remoting calls in a promise interface. this
+				 * function .send() is largely a gentle refactoring of his
+				 * work, found in "premote" here:
+				 *    https://github.com/kevinohara80/premote
+				 * such that it locks into the ng exec loop and utilizes
+				 * the angular $q service, itself based on the Q lib
+				 * Kevin uses.
+				 *
+				 * Returns a function that, when called, invokes the js
+				 * remoting method specified in this call.
+				 * @param  {String}   remoteAction class.methodName string representing the Apex className and Method to invoke
+				 * @param  {Object}   options      Ojbect containing at least the timeout and escaping options. Passed to Remoting call
+				 * @param  {Boolean}  nullok       Can this method return null and it be OK?
+				 * @return {Function}              Function engaged with the NG execution loop, making Visualforce remoting calls.
+				 */
+				function send(remoteAction, options, nullok) {
+					var namespace, controller, method;
+					var Manager = Visualforce.remoting.Manager;
+					var parts = remoteAction.split('.');
+					if (options && typeof options !== 'object') {
+						throw new Error('Options must be an object');
+					}
+					if (parts.length < 2) {
+						throw new Error('Invalid Remote Action specified. Use Controller.MethodName or $RemoteAction.Controller.MethodName');
+					} else {
+						if (parts.length === 3) {
+							namespace = parts[0];
+							controller = parts[1];
+							method = parts[2];
+						} else if (parts.length === 2) {
+							controller = parts[0];
+							method = parts[1];
+						}
+					}
+
+					return function() {
+						var deferred = $q.defer();
+						var args;
+						if (arguments.length) {
+							args = Array.prototype.slice.apply(arguments);
+						} else {
+							args = [];
+						}
+						args.splice(0, 0, remoteAction);
+						args.push(function(result, event) {
+							handleResultWithPromise(result, event, nullok, deferred);
+						});
+						if (options) {
+							args.push(options);
+						}
+						Manager.invokeAction.apply(Manager, args);
+						return deferred.promise;
+					};
+				};
+
+				/**
+				 * Method returns an Angular promise as the product of a .send() prototyped method call
+				 * @param  {String}   result   Raw JSON string returned by js Remoting call
+				 * @param  {Object}   event    Status object returned from SF detailing errors, if any.
+				 * @param  {Boolean}  nullok   Can the result be null?
+				 * @param  {Deferred} deferred Angular Promise object
+				 * @return {Deferred}          Angular promise with resolution
+				 */
+				function handleResultWithPromise(result, event, nullok, deferred) {
+					if (result) {
+						if (typeof result !== 'object') {
+							JSON.parse(result.replace(/&quot;/g,'"'));
+						}
+						if (Array.isArray(result) && result[0].message && result[0].errorCode) {
+							deferred.reject(result);
+							$rootScope.$safeApply();
+						} else {
+							deferred.resolve(result);
+							$rootScope.$safeApply();
+						}
+					} else if (typeof nullok !== 'undefined' && nullok) {
+						deferred.resolve();
+						$rootScope.$safeApply();
+					} else {
+						deferred.reject({
+							message: 'Null returned by RemoteAction not called with nullOk flag',
+							errorCode: 'NULL_RETURN'
+						});
+						$rootScope.$safeApply();
+					}
+				};
+
+				/**
+				 * This the returned object literal for the $get call.
+				 * Note that send and standardOptions essentially punt to their parental
+				 * objects.
+				 *
+				 * Huge thanks to @marpstar for helping me figure out the bug in .send()
+				 * that was causing pre-defined vfr methods to fail.
+				 *
+				 *
+				 */
+				return {
+					send: send,
+					standardOptions: standardOpts,
+					// Bulk Create
+					bulkCreate: send('ngForceController.bulkCreate', this.standardOptions, false),
+					// Bulk Update
+					bulkUpdate: send('ngForceController.bulkUpdate', this.standardOptions, false),
+					// Create
+					create: send('ngForceController.create', this.standardOptions, false),
+					// Clone
+					clone: send('ngForceController.sObjectKlone', this.standardOptions, false),
+					// Delete
+					del: send('ngForceController.del', this.standardOptions, true),
+					// Describe
+					describe: send('ngForceController.describe', this.standardOptions, false),
+					// Describe Field Set
+					describeFieldSet: send('ngForceController.describeFieldSet', this.standardOptions, false),
+					// Describe Picklist Values
+					describePicklistValues: send('ngForceController.getPicklistValues', this.standardOptions, false),
+					// Get Object Type
+					getObjectType: send('ngForceController.getObjType', this.standardOptions, false),
+					// Get Query Results as select2 data
+					getQueryResultsAsSelect2Data: send('ngForceController.getQueryResultsAsSelect2Data', this.standardOptions, false),
+					// Query
+					query: send('ngForceController.query', {
+						escape: false,
+						timeout: 30000
+					}, false),
+					// Query from Fieldset
+					queryFromFieldset: send('ngForceController.queryFromFieldSet', {
+						escape: false,
+						timeout: 30000
+					}, false),
+					// Retrieve a field list for a given object.
+					retrieve: send('ngForceController.retrieve', this.standardOptions, false),
+					// Search (SOSL)
+					search: send('ngForceController.search', this.standardOptions, false),
+					// Soql from Fieldset
+					soqlFromFieldSet: send('ngForceController.soqlFromFieldSet', this.standardOptions, false),
+					// Update
+					update: send('ngForceController.updat', this.standardOptions, true),
+					// Upsert
+					upsert: send('ngForceController.upser', this.standardOptions, true)
+				};
+			}
+		};
+	});

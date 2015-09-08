@@ -2,6 +2,8 @@
 .DS_Store
 bin
 node_modules
-ngForce.sublime-project
-ngForce.sublime-workspace
+*.sublime-project
+*.sublime-workspace
 bower_components
+npm-debug.log
+resource-bundles

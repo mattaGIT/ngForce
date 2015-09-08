@@ -1,3 +1,44 @@
+# ngForce1
+This is a fork of **ngForce** that I have gradually created while making a number of Single Page Applications in the last year. It adds fixes and features that together have made a significant difference in my development cycle:
+### vfr.send() just works
+This method allows you to invoke any controller method and wrap it in an js remoting promise. This is the most powerful method in the library, but I had a lot of problems with it. 
+
+Now it always points automatically finds the designated class method. This includes extension methods, component methods, or anything else that runs in apex for the page. There is no need to modify anything in apex as before (extend ngForceController.cls, refactor ngForceController.cls, etc). 
+### 2. Easy to use in any context
+Include the following at the bottom of any VF page:
+```javascript
+<apex:includescript value="{!URLFOR($Resource.ngForce1, 'ngForce1WithDeps.min.js')}"></apex:includescript>
+<c:ngForce />
+```
+These two lines do evertyhing:
+* Includes ngForce and submodules
+* Includes all js ngForce dependencies in the correct order
+* Adds in sessionID and other runTime variables needed for submodules
+* includes ngForceController.cls methods
+### 3. Build tool compatability
+You can just clone this repo and deploy ngForce.component, ngForceController.cls, and ngForce.resource to get started. But if you are building something complex ther is full support for **bower**, **gulp**, and **npm**. To include it as a bower component follow the usual steps:
+```
+npm install
+bower install
+gulp
+```
+### 4. Easily include any global or Apex controller variables in Angular.js
+``` html
+        <script>
+            angular.module('vfContext', []).constant('vfContext',{
+                firstName:'{!$User.firstName}'
+            });
+        </script>
+        <!-- end -->
+        <!-- module code goes here -->
+        <script>
+        	angular.module('demoNgForce1', ['ngForce', 'vfContext']);
+        </script>
+        <!-- end -->
+```
+
+
+___
 ![ngForce Logo](https://raw.githubusercontent.com/noeticpenguin/ngForce/master/images/logo_128x128.png)
 ngForce is a set of Angular.js modules that facilitate quick and sustainable Angular.js application development on the Force.com Platform. With the Angular.js modules are a set of Apex classes facilitating Visualforce Remoting. 
 
