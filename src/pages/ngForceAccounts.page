@@ -1,8 +1,8 @@
 <apex:page docType="html-5.0" showHeader="false" standardstylesheets="false" sidebar="false" standardController="Opportunity">
 
 <!-- Css -->
-		<apex:stylesheet value="{!URLFOR($Resource.Bootstrap, 'bootstrap231/css/bootstrap.min.css')}"/>
-		<apex:stylesheet value="{!URLFOR($Resource.Bootstrap, 'bootstrap231/css/bootstrap-responsive.min.css')}"/>  
+		<apex:stylesheet value="{!URLFOR($Resource.bootstrap, 'bootstrap231/css/bootstrap.min.css')}"/>
+		<apex:stylesheet value="{!URLFOR($Resource.bootstrap, 'bootstrap231/css/bootstrap-responsive.min.css')}"/>  
 		<apex:stylesheet value="{!URLFOR($Resource.ngForce, 'ngForce/css/bootstrap-custom.css')}"/> 
 
 <!-- Javascript -->

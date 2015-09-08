@@ -7,7 +7,7 @@ Now it always points automatically finds the designated class method. This inclu
 ### 2. Easy to use in any context
 Include the following at the bottom of any VF page:
 ```javascript
-<apex:includescript value="{!URLFOR($Resource.ngForce1, 'ngForce1WithDeps.min.js')}"></apex:includescript>
+<apex:includescript value="{!URLFOR($Resource.ngForce, 'ngForce1WithDeps.min.js')}"/>
 <c:ngForce />
 ```
 These two lines do evertyhing:

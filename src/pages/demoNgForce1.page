@@ -45,13 +45,13 @@
 	            		}
 	            	}
 	            	//error callback
-	            )
+	            ) 
     		});
         </script>
          <!-- includes all of ngForce! -->
-        <apex:includescript value="{!URLFOR($Resource.ngForce1, 'ngForce1WithDeps.min.js')}"></apex:includescript>
-        <c:ngForce />
+        <apex:includescript value="{!URLFOR($Resource.ngForce, 'ngForce1WithDeps.min.js')}"/>
+        <c:ngforce />
         <!-- end -->
 
     </body>
-</apex:page> 
+</apex:page>

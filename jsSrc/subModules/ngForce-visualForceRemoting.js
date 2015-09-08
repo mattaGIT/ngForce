@@ -16,24 +16,24 @@
  */
 angular.module('ngForce')
 	.provider('vfr', function() {
-		/**
-		 * Object contains the two standard fields needed by the .send method: escape and timeout.
-		 * escape: Should the result be escape. default to false.
-		 * timeout: set the timeout for visualforce to respond.
-		 * @type {Object}
-		 */
-		var standardOpts = {
-			escape: false,
-			timeout: 10000
-		};
 
 		// Force shutdown the VFR provider / factory if VisualForce is not already an object on window.
 		if (typeof Visualforce != 'object') {
 			throw new Error('Visualforce is not available as an object! Did you forget to include the ngForce component?');
 		}
 		var vfRemote = {};
-
+		var standardOpts = {
+				escape: false,
+				timeout: 10000
+			},
 		return {
+			/**
+			 * Object contains the two standard fields needed by the .send method: escape and timeout.
+			 * escape: Should the result be escape. default to false.
+			 * timeout: set the timeout for visualforce to respond.
+			 * @type {Object}
+			 */
+
 			setStandardOptions: function(newOptions) {
 				if (newOptions && typeof newOptions !== 'object') {
 					throw new Error('standardOptions must be an object');
@@ -109,15 +109,26 @@ angular.module('ngForce')
 				function handleResultWithPromise(result, event, nullok, deferred) {
 					if (result) {
 						if (typeof result !== 'object') {
-							JSON.parse(result.replace(/&quot;/g,'"'));
+							result = JSON.parse(result);
 						}
-						if (Array.isArray(result) && result[0].message && result[0].errorCode) {
+						if (Array.isArray(result) && result.length !== 0 && result[0].message && result[0].errorCode) {
+							//Handle INVALID_SESSION_ID err coming back
 							deferred.reject(result);
 							$rootScope.$safeApply();
 						} else {
+							//result is an object, or has been parsed to one, or is an array
 							deferred.resolve(result);
 							$rootScope.$safeApply();
 						}
+					} else if (event && event.status === false) {
+						//exception or other unspecified error occurred while running the remote method
+						deferred.reject({
+							message: event.message,
+							method: event.method,
+							where: event.where,
+							errorCode: (event.type === 'exception' ? 'EXCEPTION' : 'UNSPECIFIED_ERROR')
+						});
+						$rootScope.$safeApply();
 					} else if (typeof nullok !== 'undefined' && nullok) {
 						deferred.resolve();
 						$rootScope.$safeApply();
