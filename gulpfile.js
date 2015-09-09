@@ -27,12 +27,12 @@ gulp.task('ngForce', function() {
         .pipe(gulp.dest('./build'));
 });
 gulp.task('ngForceWithDependencies', function() {
-    return gulp.src(['./build/ngForce.js','./build/lib.js'])
+    return gulp.src(['./build/ngForce1.js','./build/lib.js'])
         .pipe(plugins.concat('ngForce1WithDeps.js'))
         .pipe(gulp.dest('./build'));
 });
 gulp.task('ngForceWithDependenciesMinified', function() {
-    return gulp.src(['./build/ngForce.js','./build/lib.js'])
+    return gulp.src(['./build/ngForce1.js','./build/lib.js'])
         .pipe(uglify())
         .pipe(plugins.concat('ngForce1WithDeps.min.js'))
         .pipe(gulp.dest('./build'));
