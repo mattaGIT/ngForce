@@ -1,57 +1,58 @@
 <apex:page controller="demoNgForce1Page" showHeader="false" sidebar="false" standardStylesheets="false" docType="html-5.0" language="en-US" applyHTMLTag="false" applyBodyTag="false">
+
     <head>
         <meta charset="utf-8"></meta>
         <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width"></meta>
         <!-- styling -->
-        <apex:stylesheet value="{!URLFOR($Resource.bootstrap, 'dist/css/bootstrap.css')}"></apex:stylesheet>
+        <apex:stylesheet value="{!URLFOR($Resource.ngForce1, 'css/bootstrap.css')}"></apex:stylesheet>
         <!-- end -->
     </head>
 
     <body>
         <!-- app bootstraps from here -->
         <div ng-app="demoNgForce1" ng-controller="main">
-        	<div class="jumbotron">
-  				<div class="container-fluid">
-  					<h1>Hello, world!</h1>
-  					<ul class="list-group">
-	  					<li data-ng-repeat="r in records" class="list-group-item">{{r.Name}}</li>
-
-					</ul>
-  				</div>
-			</div>
-
-        </div> 
-        
+            <div class="container-fluid">
+                <div class="jumbotron">
+                    <h1>Hello World!</h1>
+                </div>
+                <ul class="nav nav-pills nav-stacked col-xs-3 panel">
+                    
+                    <li data-ng-repeat="r in records" class="list-group-item">
+                        <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            {{r.Name}}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
         <!-- end -->
         <!-- include vf constants and globals  -->
         <script>
-            angular.module('vfContext', []).constant('vfContext',{
-                firstName:'{!$User.firstName}'
-            });
+        angular.module('vfContext', []).constant('vfContext', {
+            firstName: '{!$User.firstName}'
+        });
         </script>
         <!-- end -->
         <!-- the angular code for the demo -->
         <script>
-        	angular.module('demoNgForce1', ['ngForce', 'vfContext']);
-            angular.module('demoNgForce1').controller('main', function($scope, vfr, vfContext) {
-            
-	            $scope.records = [];
-	            $scope.getRecords = vfr.query('Select Name from user limit 10').then(
-	            	//success callback
-	            	function(results){
-	            		if(results.records)
-	            		{
-	            			$scope.records = results.records; 
-	            		}
-	            	}
-	            	//error callback
-	            ) 
-    		});
+        angular.module('demoNgForce1', ['ngForce', 'vfContext']);
+        angular.module('demoNgForce1').controller('main', function($scope, vfr, vfContext) {
+
+            $scope.records = [];
+            $scope.getRecords = vfr.query('Select Name from user limit 10').then(
+                //success callback
+                function(results) {
+                    if (results.records) {
+                        $scope.records = results.records;
+                    }
+                }
+                //error callback 
+            )
+        });
         </script>
-         <!-- includes all of ngForce! -->
-        <apex:includescript value="{!URLFOR($Resource.ngForce, 'ngForce1WithDeps.min.js')}"/>
+        <!-- includes all of ngForce! -->
+        <apex:includescript value="{!URLFOR($Resource.ngForce1, 'js/ngForce1WithDeps.js')}" />
         <c:ngforce />
         <!-- end -->
-
     </body>
 </apex:page>
