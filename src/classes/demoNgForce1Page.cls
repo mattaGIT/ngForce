@@ -1,18 +1,15 @@
 public class demoNgForce1Page {
-	 @RemoteAction
-    public static String init()
+	@RemoteAction
+	private static map<String,set<String>> getSobjectFields()
 	{
-		return JSON.serialize(getSobjectFields());
-	}
-	private static map<String,Schema.DescribeSObjectResult> getSobjectFields()
-	{
-		map<String,Schema.DescribeSObjectResult> oName2DSR = new map<String,Schema.DescribeSObjectResult>();
 		List<String> sObjectTypes = new list<String>(Schema.getGlobalDescribe().keySet());
+		map<String,set<String>> oName2fieldList = new map<String,set<String>>();
 		List<Schema.DescribeSObjectResult> DSRs  = schema.describeSObjects(sObjectTypes);
 		for(Schema.DescribeSObjectResult DSR:DSRs)
 		{
-			oName2DSR.put(DSR.getName(),DSR);
+			oName2fieldList.put(DSR.getName(),DSR.fields.getMap().keySet());
 		}
-		return oName2DSR;
+		oName2fieldList.
+		return oName2fieldList; 
 	}
 }
