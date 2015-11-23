@@ -16,13 +16,13 @@
                     <h1>Hello World!</h1>
                 </div>
                 <ul class="nav nav-pills nav-stacked col-xs-3 panel">
-                    
-                    <li data-ng-repeat="r in records" class="list-group-item">
+                    <li data-ng-repeat="(key,value) in schema" class="list-group-item">
                         <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            {{r.Name}}
+                            {{key}}
                         </a>
                     </li>
                 </ul>
+                <div> {{schema['Account']}}</div>
             </div>
         </div>
         <!-- end -->
@@ -36,18 +36,21 @@
         <!-- the angular code for the demo -->
         <script>
         angular.module('demoNgForce1', ['ngForce', 'vfContext']);
-        angular.module('demoNgForce1').controller('main', function($scope, vfr, vfContext) {
+        angular.module('demoNgForce1').controller('main', function($scope,$filter, vfr, vfContext) {
+            $scope.schema;
 
-            $scope.records = [];
-            $scope.getRecords = vfr.query('Select Name from user limit 10').then(
-                //success callback
+            $scope.getGlobalDescribe = vfr.send('demoNgForce1Page.getSobjectFields');
+            $scope.getGlobalDescribe().then(
                 function(results) {
-                    if (results.records) {
-                        $scope.records = results.records;
+                    if (results) {
+                        $scope.schema = results;
                     }
+                },
+                function(error){
+                    console.log(error);
                 }
-                //error callback 
-            )
+            );
+
         });
         </script>
         <!-- includes all of ngForce! -->

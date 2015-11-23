@@ -1,6 +1,6 @@
 # ngForce1
 This is a fork of **ngForce** that I have gradually created while making a number of Single Page Applications in the last year. It adds fixes and features that together have made a significant difference in my development cycle:
-### vfr.send() just works
+### 1. vfr.send() just works
 This method allows you to invoke any controller method and wrap it in an js remoting promise. This is the most powerful method in the library, but I had a lot of problems with it. 
 
 Now it always points automatically finds the designated class method. This includes extension methods, component methods, or anything else that runs in apex for the page. There is no need to modify anything in apex as before (extend ngForceController.cls, refactor ngForceController.cls, etc). 

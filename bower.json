@@ -1,48 +1,48 @@
 {
-    "name": "ngForce1",
-    "version": "3.2.0",
-    "homepage": "https://github.com/mattaGIT/ngForce.git",
-    "authors": [
-        "Kevin Poorman <kjp@brightleafsoftware.com>",
-        "Matthew McKinley <matt@silvelrinecrm.com>"
-    ],
-    "description": "Fork of ngForce for use with Lightning,VF, and pure HTML apps. Makes including ngForce1 simpler and more modular. Fixes dependency injection. Uses gulp/bower build tools.",
-    "main": [
-        "./build/ngForce1WithDeps.min.js"
-    ],
-    "keywords": [
-        "lightning",
-        "salesforce",
-        "angular"
-    ],
-    "license": "MIT",
-    "ignore": [
-        "**/.*",
-        "node_modules",
-        "bower_components",
-        "test",
-        "tests"
-    ],
-    "dependencies": {
-        "restangular": "~1.5.1",
-        "lodash": "~3.10.0",
-        "stringview": "*",
-        "angular": "~1.4.3",
-        "AngularJS-Scope.SafeApply": "https://github.com/yearofmoo/AngularJS-Scope.SafeApply.git",
-        "bootstrap": "~3.3.5"
+  "name": "ngForce1",
+  "version": "3.2.0",
+  "homepage": "https://github.com/mattaGIT/ngForce.git",
+  "authors": [
+    "Kevin Poorman <kjp@brightleafsoftware.com>",
+    "Matthew McKinley <matt@silvelrinecrm.com>"
+  ],
+  "description": "Fork of ngForce for use with Lightning,VF, and pure HTML apps. Makes including ngForce1 simpler and more modular. Fixes dependency injection. Uses gulp/bower build tools.",
+  "main": [
+    "./build/ngForce1WithDeps.min.js"
+  ],
+  "keywords": [
+    "lightning",
+    "salesforce",
+    "angular"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "restangular": "~1.5.1",
+    "lodash": "~3.10.1",
+    "stringview": "*",
+    "angular": "~1.4.3",
+    "AngularJS-Scope.SafeApply": "https://github.com/yearofmoo/AngularJS-Scope.SafeApply.git",
+    "bootstrap": "~3.3.5"
+  },
+  "overrides": {
+    "AngularJS-Scope.SafeApply": {
+      "main": [
+        "./src/Scope.SafeApply.js"
+      ]
     },
-    "overrides": {
-        "AngularJS-Scope.SafeApply": {
-            "main": [
-                "./src/Scope.SafeApply.js"
-            ]
-        },
-        "bootstrap": {
-            "main": [
-                "less/bootstrap.less",
-                "dist/css/bootstrap.css",
-                "dist/js/bootstrap.js"
-            ]
-        }
+    "bootstrap": {
+      "main": [
+        "less/bootstrap.less",
+        "dist/css/bootstrap.css",
+        "dist/js/bootstrap.js"
+      ]
     }
+  }
 }
