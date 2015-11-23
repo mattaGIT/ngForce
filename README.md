@@ -3,26 +3,59 @@ This is a fork of **ngForce** that I have gradually created while making a numbe
 ### 1. vfr.send() just works
 This method allows you to invoke any controller method and wrap it in an js remoting promise. This is the most powerful method in the library, but I had a lot of problems with it. 
 
-Now it always points automatically finds the designated class method. This includes extension methods, component methods, or anything else that runs in apex for the page. There is no need to modify anything in apex as before (extend ngForceController.cls, refactor ngForceController.cls, etc). 
 ### 2. Easy to use in any context
 Include the following at the bottom of any VF page:
 ```javascript
 <apex:includescript value="{!URLFOR($Resource.ngForce, 'ngForce1WithDeps.min.js')}"/>
 <c:ngForce />
 ```
-These two lines do evertyhing:
+These two lines do everything:
+*Client Side*
 * Includes ngForce and submodules
-* Includes all js ngForce dependencies in the correct order
+* Includes all javscript dependencies that ngForce has in the correct order
 * Adds in sessionID and other runTime variables needed for submodules
-* includes ngForceController.cls methods
-### 3. Build tool compatability
-You can just clone this repo and deploy ngForce.component, ngForceController.cls, and ngForce.resource to get started. But if you are building something complex ther is full support for **bower**, **gulp**, and **npm**. To include it as a bower component follow the usual steps:
+
+*Server Side*
+*Includes ngForceController.cls methods*
+*Includes access to custom apex methods anywhere*
+
+### 3. vfr.send() has access to all apex!
+
+You can access any static apex in the org without an extra line of code.
+#### Example 1)
+ This means you can either directly specify methods from all static or global classes/methods with:
+```javascript
+var customPromise1 = vfr.send(apexClass1.apexMethod1);
+var customPromise2 = vfr.send(apexClass2.apexMethod2);
+
+//chain together results
+customPromise1(args).then(function(results){
+	return customPromise2(results))
+})
+```
+OR 
+
+Use apex class path of the page to find the designated class method. How? By using the class hierarchy of the apex run time.
+#### Example 2)
+ This means you can either directly specify methods with:
+```javascript
+//would call the extensions save method if it exists, else use the controllers.
+var customPromise = vfr.send(save());
+
+```
+
+This includes extension methods, component methods, or anything else that runs in apex for the page. There is never a need to modify anything in apex to include this.
+
+### 4. Build tool compatability
+You can just clone this repo and deploy ngForce.component, ngForceController.cls, and ngForce.resource to get started. But if you are building something complex there is full support for **bower**, **gulp**, and **npm**. To include it as a bower component follow the usual steps:
 ```
 npm install
-bower install
+bower install https://github.com/mattaGIT/ngForce.git
 gulp
 ```
-### 4. Easily include any global or Apex controller variables in Angular.js
+
+All dependency conflicts and things like automatic building are handled by the included bower.json and gulp.js stuff included.
+### 5. Easily include any global or Apex controller variables in Angular.js
 ``` html
         <script>
             angular.module('vfContext', []).constant('vfContext',{
