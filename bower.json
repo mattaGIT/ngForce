@@ -8,7 +8,7 @@
   ],
   "description": "Fork of ngForce for use with Lightning,VF, and pure HTML apps. Makes including ngForce1 simpler and more modular. Fixes dependency injection. Uses gulp/bower build tools.",
   "main": [
-    "./build/ngForce1WithDeps.min.js"
+    "./build/js/ngForce1WithDeps.js"
   ],
   "keywords": [
     "lightning",
@@ -28,8 +28,7 @@
     "lodash": "~3.10.1",
     "stringview": "*",
     "angular": "~1.4.3",
-    "AngularJS-Scope.SafeApply": "https://github.com/yearofmoo/AngularJS-Scope.SafeApply.git",
-    "bootstrap": "~3.3.5"
+    "AngularJS-Scope.SafeApply": "https://github.com/yearofmoo/AngularJS-Scope.SafeApply.git"
   },
   "overrides": {
     "AngularJS-Scope.SafeApply": {
