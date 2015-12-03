@@ -1,6 +1,6 @@
 {
   "name": "ngForce1",
-  "version": "3.2.5",
+  "version": "3.3.0",
   "homepage": "https://github.com/mattaGIT/ngForce.git",
   "authors": [
     "Kevin Poorman <kjp@brightleafsoftware.com>",
@@ -28,14 +28,10 @@
     "lodash": "~3.10.1",
     "stringview": "*",
     "angular": "~1.4.3",
-    "AngularJS-Scope.SafeApply": "https://github.com/yearofmoo/AngularJS-Scope.SafeApply.git"
+    "bootstrap": "~3.3.5",
+    "safeApply": "https://github.com/mattaGIT/AngularJS-Scope.SafeApply.git#~1.0.0"
   },
   "overrides": {
-    "AngularJS-Scope.SafeApply": {
-      "main": [
-        "./src/Scope.SafeApply.js"
-      ]
-    },
     "bootstrap": {
       "main": [
         "less/bootstrap.less",
